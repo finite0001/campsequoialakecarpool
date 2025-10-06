@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trees, LogOut, Car, Users, Plus, Shield, CheckCircle2, AlertCircle } from "lucide-react";
+import { LogOut, Car, Users, Plus, Shield, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import campLogo from "@/assets/camp-logo.png";
 
 interface Profile {
   id: string;
@@ -126,9 +127,11 @@ const Dashboard = () => {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-              <Trees className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <img 
+              src={campLogo} 
+              alt="Camp Sequoia Lake Logo" 
+              className="h-10 w-auto"
+            />
             <div>
               <h1 className="text-xl font-bold">Camp Sequoia Lake</h1>
               <p className="text-sm text-muted-foreground">Carpool Coordinator</p>

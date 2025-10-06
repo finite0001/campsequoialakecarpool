@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Trees, Car } from "lucide-react";
+import { Car } from "lucide-react";
+import campLogo from "@/assets/camp-logo.png";
 
 type AuthMode = "signin" | "signup";
 type UserRole = "driver" | "passenger";
@@ -125,9 +126,11 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center space-y-3">
-          <div className="mx-auto w-16 h-16 bg-primary rounded-full flex items-center justify-center">
-            <Trees className="w-8 h-8 text-primary-foreground" />
-          </div>
+          <img 
+            src={campLogo} 
+            alt="Camp Sequoia Lake Logo" 
+            className="mx-auto h-16 w-auto"
+          />
           <CardTitle className="text-2xl">Camp Sequoia Lake</CardTitle>
           <CardDescription>
             {mode === "signin" ? "Sign in to manage your carpool" : "Create your account"}

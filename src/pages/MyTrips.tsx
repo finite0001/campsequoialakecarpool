@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import campLogo from "@/assets/camp-logo.png";
 
 interface Trip {
   id: string;
@@ -171,11 +172,16 @@ const MyTrips = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
+          <img 
+            src={campLogo} 
+            alt="Camp Sequoia Lake Logo" 
+            className="h-10 w-auto"
+          />
         </div>
       </header>
 

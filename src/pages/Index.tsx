@@ -2,9 +2,9 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trees, Car, Shield, CheckCircle2, Sparkles } from "lucide-react";
+import { Car, Shield, CheckCircle2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import campBoard from "@/assets/camp-board.jpg";
+import campLogo from "@/assets/camp-logo.png";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -23,9 +23,11 @@ const Index = () => {
       <header className="container mx-auto px-4 py-6 animate-fade-in">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center hover-scale">
-              <Trees className="w-6 h-6 text-primary-foreground" />
-            </div>
+            <img 
+              src={campLogo} 
+              alt="Camp Sequoia Lake Logo" 
+              className="h-12 w-auto hover-scale"
+            />
             <div>
               <h1 className="text-2xl font-bold">Camp Sequoia Lake</h1>
               <p className="text-sm text-muted-foreground">Carpool Coordinator</p>
@@ -72,12 +74,12 @@ const Index = () => {
               </div>
             </div>
             
-            <div className="relative animate-scale-in">
+            <div className="relative animate-scale-in flex items-center justify-center">
               <div className="absolute -inset-4 bg-primary/20 rounded-3xl blur-2xl animate-pulse"></div>
               <img 
-                src={campBoard} 
-                alt="Camp Sequoia Lake Board" 
-                className="relative rounded-2xl shadow-2xl w-full h-auto hover-scale"
+                src={campLogo} 
+                alt="Camp Sequoia Lake Logo" 
+                className="relative w-full max-w-md h-auto hover-scale drop-shadow-2xl"
               />
             </div>
           </div>
@@ -190,10 +192,9 @@ const Index = () => {
       </main>
 
       <footer className="container mx-auto px-4 py-8 text-center text-sm text-muted-foreground mt-20">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Trees className="w-4 h-4 text-primary" />
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <img src={campLogo} alt="Camp Logo" className="h-6 w-auto" />
           <p className="font-medium">Camp Sequoia Lake Carpool Coordinator</p>
-          <Trees className="w-4 h-4 text-primary" />
         </div>
         <p>Making the journey together, one carpool at a time 🚗💨</p>
       </footer>
