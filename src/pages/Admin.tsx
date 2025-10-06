@@ -14,9 +14,12 @@ interface Profile {
   id: string;
   full_name: string;
   email: string;
-  role: string;
   phone: string | null;
   created_at: string;
+}
+
+interface UserWithRole extends Profile {
+  roles: string[];
 }
 
 interface Trip {
@@ -40,7 +43,7 @@ interface Trip {
 const Admin = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<Profile[]>([]);
+  const [users, setUsers] = useState<UserWithRole[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -93,7 +96,19 @@ const Admin = () => {
         .order("created_at", { ascending: false });
 
       if (usersError) throw usersError;
-      setUsers(usersData);
+
+      // Load roles for all users
+      const { data: rolesData } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      // Combine users with their roles
+      const usersWithRoles: UserWithRole[] = usersData.map(user => ({
+        ...user,
+        roles: rolesData?.filter(r => r.user_id === user.id).map(r => r.role) || []
+      }));
+
+      setUsers(usersWithRoles);
 
       // Load all trips
       const { data: tripsData, error: tripsError } = await supabase
@@ -130,8 +145,8 @@ const Admin = () => {
     return null;
   }
 
-  const drivers = users.filter((u) => u.role === "driver");
-  const passengers = users.filter((u) => u.role === "passenger");
+  const drivers = users.filter((u) => u.roles.includes("driver"));
+  const passengers = users.filter((u) => u.roles.includes("passenger") || u.roles.length === 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -227,9 +242,17 @@ const Admin = () => {
                           Joined {format(new Date(user.created_at), "PPP")}
                         </p>
                       </div>
-                      <Badge variant={user.role === "driver" ? "default" : "secondary"}>
-                        {user.role}
-                      </Badge>
+                      <div className="flex gap-1">
+                        {user.roles.length > 0 ? (
+                          user.roles.map((role) => (
+                            <Badge key={role} variant={role === "driver" ? "default" : "secondary"}>
+                              {role}
+                            </Badge>
+                          ))
+                        ) : (
+                          <Badge variant="secondary">passenger</Badge>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

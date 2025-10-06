@@ -12,7 +12,6 @@ interface Profile {
   id: string;
   email: string;
   full_name: string;
-  role: "driver" | "passenger" | "admin";
 }
 
 const Dashboard = () => {
@@ -20,6 +19,7 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isDriver, setIsDriver] = useState(false);
   const [hasVerifiedDocuments, setHasVerifiedDocuments] = useState(false);
   const [hasAcknowledgedLiability, setHasAcknowledgedLiability] = useState(false);
 
@@ -47,18 +47,18 @@ const Dashboard = () => {
       if (profileError) throw profileError;
       setProfile(profileData);
 
-      // Check if user is admin
-      const { data: adminRole } = await supabase
+      // Check user roles
+      const { data: userRoles } = await supabase
         .from("user_roles")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
+        .select("role")
+        .eq("user_id", session.user.id);
 
-      setIsAdmin(!!adminRole);
+      const roles = userRoles?.map(r => r.role) || [];
+      setIsAdmin(roles.includes("admin"));
+      setIsDriver(roles.includes("driver"));
 
       // Check if driver has documents
-      if (profileData.role === "driver") {
+      if (roles.includes("driver")) {
         const { data: docs } = await supabase
           .from("driver_documents")
           .select("*")
@@ -148,8 +148,8 @@ const Dashboard = () => {
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-2">Welcome, {profile?.full_name}!</h2>
           <div className="flex items-center gap-2">
-            <Badge variant={profile?.role === "driver" ? "default" : "secondary"}>
-              {profile?.role === "driver" ? "Driver" : "Passenger"}
+            <Badge variant={isDriver ? "default" : "secondary"}>
+              {isDriver ? "Driver" : "Passenger"}
             </Badge>
             {isAdmin && (
               <Badge variant="outline" className="border-accent text-accent">
@@ -197,7 +197,7 @@ const Dashboard = () => {
           </Card>
         )}
 
-        {profile?.role === "driver" && !hasVerifiedDocuments && hasAcknowledgedLiability && (
+        {isDriver && !hasVerifiedDocuments && hasAcknowledgedLiability && (
           <Card className="mb-6 border-accent bg-accent/5">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -232,7 +232,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {profile?.role === "driver" && hasVerifiedDocuments && (
+          {isDriver && hasVerifiedDocuments && (
             <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/create-trip")}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -259,7 +259,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                {profile?.role === "driver"
+                {isDriver
                   ? "Manage trips you're driving"
                   : "See trips you've joined"}
               </p>

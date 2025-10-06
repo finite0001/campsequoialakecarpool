@@ -17,25 +17,25 @@ export type Database = {
       driver_documents: {
         Row: {
           driver_id: string
-          drivers_license_url: string
+          drivers_license_path: string
           id: string
-          insurance_card_url: string
+          insurance_card_path: string
           uploaded_at: string
           verification_status: Database["public"]["Enums"]["verification_status"]
         }
         Insert: {
           driver_id: string
-          drivers_license_url: string
+          drivers_license_path: string
           id?: string
-          insurance_card_url: string
+          insurance_card_path: string
           uploaded_at?: string
           verification_status?: Database["public"]["Enums"]["verification_status"]
         }
         Update: {
           driver_id?: string
-          drivers_license_url?: string
+          drivers_license_path?: string
           id?: string
-          insurance_card_url?: string
+          insurance_card_path?: string
           uploaded_at?: string
           verification_status?: Database["public"]["Enums"]["verification_status"]
         }
@@ -82,7 +82,6 @@ export type Database = {
           full_name: string
           id: string
           phone: string | null
-          role: Database["public"]["Enums"]["app_role"]
           updated_at: string
         }
         Insert: {
@@ -91,7 +90,6 @@ export type Database = {
           full_name: string
           id: string
           phone?: string | null
-          role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
         }
         Update: {
@@ -100,7 +98,6 @@ export type Database = {
           full_name?: string
           id?: string
           phone?: string | null
-          role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
         }
         Relationships: []

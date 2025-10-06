@@ -70,22 +70,13 @@ const VerifyDriver = () => {
 
       if (insuranceError) throw insuranceError;
 
-      // Get public URLs
-      const { data: dlUrl } = supabase.storage
-        .from("driver-documents")
-        .getPublicUrl(dlPath);
-
-      const { data: insuranceUrl } = supabase.storage
-        .from("driver-documents")
-        .getPublicUrl(insurancePath);
-
-      // Save to database
+      // Save file paths to database (not public URLs for security)
       const { error: dbError } = await supabase
         .from("driver_documents")
         .upsert({
           driver_id: userId,
-          drivers_license_url: dlUrl.publicUrl,
-          insurance_card_url: insuranceUrl.publicUrl,
+          drivers_license_path: dlPath,
+          insurance_card_path: insurancePath,
           verification_status: "approved",
         });
 

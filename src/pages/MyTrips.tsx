@@ -56,16 +56,17 @@ const MyTrips = () => {
 
       setCurrentUserId(session.user.id);
 
-      // Get user role
-      const { data: profile } = await supabase
-        .from("profiles")
+      // Get user roles
+      const { data: userRoles } = await supabase
+        .from("user_roles")
         .select("role")
-        .eq("id", session.user.id)
-        .single();
+        .eq("user_id", session.user.id);
 
-      setUserRole(profile?.role || "");
+      const roles = userRoles?.map(r => r.role) || [];
+      const isDriver = roles.includes("driver");
+      setUserRole(isDriver ? "driver" : "passenger");
 
-      if (profile?.role === "driver") {
+      if (isDriver) {
         // Load trips as driver
         const { data: driverTrips, error } = await supabase
           .from("trips")
