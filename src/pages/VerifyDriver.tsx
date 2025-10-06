@@ -15,13 +15,40 @@ const VerifyDriver = () => {
   const [dlFile, setDlFile] = useState<File | null>(null);
   const [insuranceFile, setInsuranceFile] = useState<File | null>(null);
 
+  const validateFile = (file: File): boolean => {
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+    const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.pdf'];
+    
+    // Check MIME type
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      toast.error('Only JPG, PNG, or PDF files are allowed');
+      return false;
+    }
+    
+    // Check extension
+    const ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      toast.error('Invalid file extension');
+      return false;
+    }
+    
+    // Check size
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: "dl" | "insurance") => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("File size must be less than 5MB");
+      
+      if (!validateFile(file)) {
         return;
       }
+      
       if (type === "dl") {
         setDlFile(file);
       } else {
@@ -77,15 +104,17 @@ const VerifyDriver = () => {
           driver_id: userId,
           drivers_license_path: dlPath,
           insurance_card_path: insurancePath,
-          verification_status: "approved",
+          verification_status: "pending",
         });
 
       if (dbError) throw dbError;
 
-      toast.success("Documents uploaded successfully! You're now verified as a driver.");
+      toast.success("Documents uploaded successfully! An admin will review them shortly.");
       navigate("/dashboard");
     } catch (error: any) {
-      console.error("Error uploading documents:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error uploading documents:", error);
+      }
       toast.error("Failed to upload documents. Please try again.");
     } finally {
       setUploading(false);
@@ -167,7 +196,7 @@ const VerifyDriver = () => {
                 <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                   <li>Files must be less than 5MB</li>
                   <li>Accepted formats: JPG, PNG, PDF</li>
-                  <li>Documents will be automatically approved once uploaded</li>
+                  <li>An admin will review your documents before approval</li>
                   <li>Your information is kept secure and private</li>
                 </ul>
               </div>

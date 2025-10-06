@@ -77,7 +77,9 @@ const Dashboard = () => {
 
       setHasAcknowledgedLiability(!!liability);
     } catch (error: any) {
-      console.error("Error loading profile:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error loading profile:", error);
+      }
       toast.error("Failed to load profile");
     } finally {
       setLoading(false);
@@ -106,7 +108,9 @@ const Dashboard = () => {
       setHasAcknowledgedLiability(true);
       toast.success("Liability release acknowledged");
     } catch (error: any) {
-      console.error("Error acknowledging liability:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error acknowledging liability:", error);
+      }
       toast.error("Failed to acknowledge liability release");
     }
   };

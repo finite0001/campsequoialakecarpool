@@ -105,7 +105,9 @@ const MyTrips = () => {
         setTrips(participantData.map((p: any) => p.trip) as any);
       }
     } catch (error: any) {
-      console.error("Error loading trips:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error loading trips:", error);
+      }
       toast.error("Failed to load trips");
     } finally {
       setLoading(false);
@@ -125,7 +127,9 @@ const MyTrips = () => {
       toast.success("Left the trip successfully");
       loadTrips();
     } catch (error: any) {
-      console.error("Error leaving trip:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error leaving trip:", error);
+      }
       toast.error("Failed to leave trip");
     }
   };
@@ -143,7 +147,9 @@ const MyTrips = () => {
       toast.success("Trip deleted successfully");
       loadTrips();
     } catch (error: any) {
-      console.error("Error deleting trip:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error deleting trip:", error);
+      }
       toast.error("Failed to delete trip");
     }
   };

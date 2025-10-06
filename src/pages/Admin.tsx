@@ -79,7 +79,9 @@ const Admin = () => {
       setIsAdmin(true);
       await loadData();
     } catch (error: any) {
-      console.error("Error checking admin status:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error checking admin status:", error);
+      }
       toast.error("Failed to verify admin access");
       navigate("/dashboard");
     } finally {
@@ -125,7 +127,9 @@ const Admin = () => {
       if (tripsError) throw tripsError;
       setTrips(tripsData as any);
     } catch (error: any) {
-      console.error("Error loading data:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error loading data:", error);
+      }
       toast.error("Failed to load admin data");
     }
   };

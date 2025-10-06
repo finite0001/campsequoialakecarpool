@@ -71,7 +71,9 @@ const CreateTrip = () => {
       toast.success("Trip created successfully!");
       navigate("/my-trips");
     } catch (error: any) {
-      console.error("Error creating trip:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error creating trip:", error);
+      }
       toast.error("Failed to create trip");
     } finally {
       setLoading(false);
