@@ -58,7 +58,15 @@ const CreateTrip = () => {
         fuel_cost: formData.fuel_cost ? parseFloat(formData.fuel_cost) : null,
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('driver_documents') || error.message?.includes('verification')) {
+          toast.error("You must upload and get approved for driver documents before creating trips");
+          navigate("/dashboard");
+        } else {
+          throw error;
+        }
+        return;
+      }
 
       toast.success("Trip created successfully!");
       navigate("/my-trips");

@@ -114,24 +114,13 @@ const MyTrips = () => {
 
   const handleLeaveTrip = async (tripId: string, participantId: string) => {
     try {
-      // Remove participant
+      // Remove participant - trigger handles seat increment atomically
       const { error: deleteError } = await supabase
         .from("trip_participants")
         .delete()
         .eq("id", participantId);
 
       if (deleteError) throw deleteError;
-
-      // Update available seats
-      const trip = trips.find((t) => t.id === tripId);
-      if (trip) {
-        const { error: updateError } = await supabase
-          .from("trips")
-          .update({ available_seats: trip.available_seats + 1 })
-          .eq("id", tripId);
-
-        if (updateError) throw updateError;
-      }
 
       toast.success("Left the trip successfully");
       loadTrips();

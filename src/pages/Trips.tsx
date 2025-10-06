@@ -84,20 +84,7 @@ const Trips = () => {
 
       if (!session) return;
 
-      // Check if already joined
-      const { data: existing } = await supabase
-        .from("trip_participants")
-        .select("*")
-        .eq("trip_id", tripId)
-        .eq("passenger_id", session.user.id)
-        .maybeSingle();
-
-      if (existing) {
-        toast.error("You've already joined this trip");
-        return;
-      }
-
-      // Add participant
+      // Add participant - trigger handles seat decrement atomically
       const { error: participantError } = await supabase
         .from("trip_participants")
         .insert({
@@ -105,15 +92,16 @@ const Trips = () => {
           passenger_id: session.user.id,
         });
 
-      if (participantError) throw participantError;
-
-      // Update available seats
-      const { error: updateError } = await supabase
-        .from("trips")
-        .update({ available_seats: availableSeats - 1 })
-        .eq("id", tripId);
-
-      if (updateError) throw updateError;
+      if (participantError) {
+        if (participantError.message?.includes('Trip is full')) {
+          toast.error("This trip is full");
+        } else if (participantError.message?.includes('unique_passenger_trip')) {
+          toast.error("You've already joined this trip");
+        } else {
+          toast.error("Failed to join trip");
+        }
+        return;
+      }
 
       toast.success("Successfully joined the trip!");
       loadTrips();
