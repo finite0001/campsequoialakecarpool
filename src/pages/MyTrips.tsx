@@ -173,15 +173,17 @@ const MyTrips = () => {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
-          </Button>
-          <img 
-            src={campLogo} 
-            alt="Camp Sequoia Lake Logo" 
-            className="h-10 w-auto"
-          />
+          <div className="flex items-center gap-4">
+            <img 
+              src={campLogo} 
+              alt="Camp Sequoia Lake Logo" 
+              className="h-10 w-auto"
+            />
+            <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </div>
         </div>
       </header>
 

@@ -125,16 +125,20 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
       <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="text-center space-y-3">
-          <img 
-            src={campLogo} 
-            alt="Camp Sequoia Lake Logo" 
-            className="mx-auto h-16 w-auto"
-          />
-          <CardTitle className="text-2xl">Camp Sequoia Lake</CardTitle>
-          <CardDescription>
-            {mode === "signin" ? "Sign in to manage your carpool" : "Create your account"}
-          </CardDescription>
+        <CardHeader className="space-y-3">
+          <div className="flex items-center gap-3">
+            <img 
+              src={campLogo} 
+              alt="Camp Sequoia Lake Logo" 
+              className="h-12 w-auto"
+            />
+            <div>
+              <CardTitle className="text-2xl">Camp Sequoia Lake</CardTitle>
+              <CardDescription>
+                {mode === "signin" ? "Sign in to manage your carpool" : "Create your account"}
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={mode === "signin" ? handleSignIn : handleSignUp} className="space-y-4">
