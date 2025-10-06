@@ -2,8 +2,9 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trees, Car, Shield, CheckCircle2 } from "lucide-react";
+import { Trees, Car, Shield, CheckCircle2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import campBoard from "@/assets/camp-board.jpg";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -18,11 +19,11 @@ const Index = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
-      <header className="container mx-auto px-4 py-6">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background overflow-hidden">
+      <header className="container mx-auto px-4 py-6 animate-fade-in">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center hover-scale">
               <Trees className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
@@ -30,28 +31,62 @@ const Index = () => {
               <p className="text-sm text-muted-foreground">Carpool Coordinator</p>
             </div>
           </div>
-          <Button onClick={() => navigate("/auth")}>Get Started</Button>
+          <Button onClick={() => navigate("/auth")} className="hover-scale">
+            <Sparkles className="w-4 h-4 mr-2" />
+            Get Started
+          </Button>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto text-center mb-16">
-          <h2 className="text-5xl font-bold mb-6">
-            Share the Journey to Camp
-          </h2>
-          <p className="text-xl text-muted-foreground mb-8">
-            Coordinate carpools with fellow staff members for Camp Sequoia Lake training.
-            Save on gas, reduce environmental impact, and make new friends on the way.
-          </p>
-          <Button size="lg" onClick={() => navigate("/auth")}>
-            Join the Carpool
-          </Button>
+        {/* Hero Section with Image */}
+        <div className="max-w-6xl mx-auto mb-20">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="text-center lg:text-left animate-fade-in">
+              <h2 className="text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+                Share the Journey to Camp
+              </h2>
+              <p className="text-xl text-muted-foreground mb-8">
+                Coordinate carpools with fellow staff members for Camp Sequoia Lake training.
+                Save on gas, reduce environmental impact, and make new friends on the way! 🌲
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Button 
+                  size="lg" 
+                  onClick={() => navigate("/auth")}
+                  className="hover-scale"
+                >
+                  <Car className="w-5 h-5 mr-2" />
+                  Join the Carpool
+                </Button>
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  onClick={() => {
+                    document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="hover-scale"
+                >
+                  Learn More
+                </Button>
+              </div>
+            </div>
+            
+            <div className="relative animate-scale-in">
+              <div className="absolute -inset-4 bg-primary/20 rounded-3xl blur-2xl animate-pulse"></div>
+              <img 
+                src={campBoard} 
+                alt="Camp Sequoia Lake Board" 
+                className="relative rounded-2xl shadow-2xl w-full h-auto hover-scale"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-16">
-          <Card>
+          <Card className="hover-scale animate-fade-in border-2 hover:border-primary/50 transition-all duration-300">
             <CardHeader>
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Car className="w-6 h-6 text-primary" />
               </div>
               <CardTitle>Easy Coordination</CardTitle>
@@ -61,9 +96,9 @@ const Index = () => {
             </CardHeader>
           </Card>
 
-          <Card>
+          <Card className="hover-scale animate-fade-in border-2 hover:border-success/50 transition-all duration-300" style={{ animationDelay: "0.1s" }}>
             <CardHeader>
-              <div className="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <CheckCircle2 className="w-6 h-6 text-success" />
               </div>
               <CardTitle>Verified Drivers</CardTitle>
@@ -73,9 +108,9 @@ const Index = () => {
             </CardHeader>
           </Card>
 
-          <Card>
+          <Card className="hover-scale animate-fade-in border-2 hover:border-accent/50 transition-all duration-300" style={{ animationDelay: "0.2s" }}>
             <CardHeader>
-              <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Shield className="w-6 h-6 text-accent" />
               </div>
               <CardTitle>Secure & Organized</CardTitle>
@@ -86,64 +121,81 @@ const Index = () => {
           </Card>
         </div>
 
-        <Card className="max-w-3xl mx-auto bg-card/50 backdrop-blur">
-          <CardHeader>
-            <CardTitle className="text-2xl">How It Works</CardTitle>
+        <Card id="how-it-works" className="max-w-3xl mx-auto bg-gradient-to-br from-card to-card/50 backdrop-blur border-2 hover:border-primary/30 transition-all duration-300 shadow-xl animate-fade-in">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl mb-2">How It Works</CardTitle>
+            <CardDescription className="text-base">Four simple steps to start carpooling</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold">
+          <CardContent className="space-y-6">
+            <div className="flex gap-4 hover:translate-x-2 transition-transform duration-300">
+              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-primary to-primary/70 rounded-full flex items-center justify-center text-primary-foreground font-bold text-lg shadow-lg">
                 1
               </div>
               <div>
-                <h4 className="font-medium mb-1">Sign Up</h4>
+                <h4 className="font-bold mb-1 text-lg">Sign Up</h4>
                 <p className="text-sm text-muted-foreground">
-                  Create an account and choose your role: Driver or Passenger
+                  Create an account and choose your role: Driver or Passenger 🚗
                 </p>
               </div>
             </div>
 
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold">
+            <div className="flex gap-4 hover:translate-x-2 transition-transform duration-300">
+              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-success to-success/70 rounded-full flex items-center justify-center text-success-foreground font-bold text-lg shadow-lg">
                 2
               </div>
               <div>
-                <h4 className="font-medium mb-1">Get Verified (Drivers Only)</h4>
+                <h4 className="font-bold mb-1 text-lg">Get Verified (Drivers Only)</h4>
                 <p className="text-sm text-muted-foreground">
-                  Upload your driver's license and insurance card for instant verification
+                  Upload your driver's license and insurance card for instant verification ✅
                 </p>
               </div>
             </div>
 
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold">
+            <div className="flex gap-4 hover:translate-x-2 transition-transform duration-300">
+              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-accent to-accent/70 rounded-full flex items-center justify-center text-accent-foreground font-bold text-lg shadow-lg">
                 3
               </div>
               <div>
-                <h4 className="font-medium mb-1">Create or Join Trips</h4>
+                <h4 className="font-bold mb-1 text-lg">Create or Join Trips</h4>
                 <p className="text-sm text-muted-foreground">
-                  Drivers create trips, passengers claim seats - it's that simple!
+                  Drivers create trips, passengers claim seats - it's that simple! 🎯
                 </p>
               </div>
             </div>
 
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold">
+            <div className="flex gap-4 hover:translate-x-2 transition-transform duration-300">
+              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-secondary to-secondary/70 rounded-full flex items-center justify-center text-secondary-foreground font-bold text-lg shadow-lg">
                 4
               </div>
               <div>
-                <h4 className="font-medium mb-1">Coordinate & Travel</h4>
+                <h4 className="font-bold mb-1 text-lg">Coordinate & Travel</h4>
                 <p className="text-sm text-muted-foreground">
-                  Share fuel costs, coordinate meeting points, and enjoy the ride together
+                  Share fuel costs, coordinate meeting points, and enjoy the ride together 🌲
                 </p>
               </div>
+            </div>
+
+            <div className="mt-8 pt-6 border-t text-center">
+              <Button 
+                size="lg" 
+                onClick={() => navigate("/auth")}
+                className="hover-scale"
+              >
+                <Sparkles className="w-5 h-5 mr-2" />
+                Start Your Journey
+              </Button>
             </div>
           </CardContent>
         </Card>
       </main>
 
-      <footer className="container mx-auto px-4 py-8 text-center text-sm text-muted-foreground">
-        <p>Camp Sequoia Lake Carpool Coordinator - Making the journey together</p>
+      <footer className="container mx-auto px-4 py-8 text-center text-sm text-muted-foreground mt-20">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <Trees className="w-4 h-4 text-primary" />
+          <p className="font-medium">Camp Sequoia Lake Carpool Coordinator</p>
+          <Trees className="w-4 h-4 text-primary" />
+        </div>
+        <p>Making the journey together, one carpool at a time 🚗💨</p>
       </footer>
     </div>
   );
