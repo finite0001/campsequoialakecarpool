@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Users, Car, Shield } from "lucide-react";
+import { ArrowLeft, Users, Car, Shield, UserPlus, UserMinus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import campLogo from "@/assets/camp-logo.png";
@@ -134,6 +134,38 @@ const Admin = () => {
     }
   };
 
+  const toggleAdminRole = async (userId: string, currentlyAdmin: boolean) => {
+    try {
+      if (currentlyAdmin) {
+        // Remove admin role
+        const { error } = await supabase
+          .from("user_roles")
+          .delete()
+          .eq("user_id", userId)
+          .eq("role", "admin");
+
+        if (error) throw error;
+        toast.success("Admin role removed");
+      } else {
+        // Add admin role
+        const { error } = await supabase
+          .from("user_roles")
+          .insert({ user_id: userId, role: "admin" });
+
+        if (error) throw error;
+        toast.success("Admin role added");
+      }
+
+      // Reload data
+      await loadData();
+    } catch (error: any) {
+      if (import.meta.env.DEV) {
+        console.error("Error toggling admin role:", error);
+      }
+      toast.error("Failed to update admin role");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -231,34 +263,60 @@ const Admin = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {users.map((user) => (
-                    <div
-                      key={user.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div>
-                        <p className="font-medium">{user.full_name}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                        {user.phone && (
-                          <p className="text-sm text-muted-foreground">{user.phone}</p>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Joined {format(new Date(user.created_at), "PPP")}
-                        </p>
+                  {users.map((user) => {
+                    const isAdmin = user.roles.includes("admin");
+                    return (
+                      <div
+                        key={user.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium">{user.full_name}</p>
+                          <p className="text-sm text-muted-foreground">{user.email}</p>
+                          {user.phone && (
+                            <p className="text-sm text-muted-foreground">{user.phone}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Joined {format(new Date(user.created_at), "PPP")}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex gap-1">
+                            {user.roles.length > 0 ? (
+                              user.roles.map((role) => (
+                                <Badge 
+                                  key={role} 
+                                  variant={role === "admin" ? "outline" : role === "driver" ? "default" : "secondary"}
+                                  className={role === "admin" ? "border-accent text-accent" : ""}
+                                >
+                                  {role}
+                                </Badge>
+                              ))
+                            ) : (
+                              <Badge variant="secondary">passenger</Badge>
+                            )}
+                          </div>
+                          <Button
+                            variant={isAdmin ? "destructive" : "outline"}
+                            size="sm"
+                            onClick={() => toggleAdminRole(user.id, isAdmin)}
+                          >
+                            {isAdmin ? (
+                              <>
+                                <UserMinus className="w-4 h-4 mr-1" />
+                                Remove Admin
+                              </>
+                            ) : (
+                              <>
+                                <UserPlus className="w-4 h-4 mr-1" />
+                                Make Admin
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex gap-1">
-                        {user.roles.length > 0 ? (
-                          user.roles.map((role) => (
-                            <Badge key={role} variant={role === "driver" ? "default" : "secondary"}>
-                              {role}
-                            </Badge>
-                          ))
-                        ) : (
-                          <Badge variant="secondary">passenger</Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
