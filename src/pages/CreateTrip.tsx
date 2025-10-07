@@ -1,4 +1,5 @@
-import { useState } from "react";
+/// <reference types="google.maps" />
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,9 @@ import { toast } from "sonner";
 import { ArrowLeft, Plus } from "lucide-react";
 import campLogo from "@/assets/camp-logo.png";
 import { z } from "zod";
+import LocationAutocomplete from "@/components/LocationAutocomplete";
+import TripRouteMap from "@/components/TripRouteMap";
+import { loadGoogleMapsScript } from "@/lib/maps";
 
 // Validation schema for trip creation
 const tripSchema = z.object({
@@ -24,6 +28,9 @@ const tripSchema = z.object({
 const CreateTrip = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [mapsLoaded, setMapsLoaded] = useState(false);
+  const [departurePlace, setDeparturePlace] = useState<google.maps.places.PlaceResult>();
+  const [arrivalPlace, setArrivalPlace] = useState<google.maps.places.PlaceResult>();
   const [formData, setFormData] = useState({
     departure_location: "",
     arrival_location: "Camp Sequoia Lake",
@@ -32,6 +39,28 @@ const CreateTrip = () => {
     total_seats: 3,
     fuel_cost: "",
   });
+
+  // Load Google Maps API
+  useEffect(() => {
+    const loadMaps = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-google-maps-key');
+        if (error) throw error;
+        
+        if (data?.apiKey) {
+          await loadGoogleMapsScript(data.apiKey);
+          setMapsLoaded(true);
+        } else {
+          toast.error("Google Maps configuration missing");
+        }
+      } catch (error) {
+        console.error("Failed to load Google Maps:", error);
+        toast.error("Failed to load maps. Location features may be limited.");
+      }
+    };
+
+    loadMaps();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,33 +158,68 @@ const CreateTrip = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="departure" className="text-base font-medium">Departure Location *</Label>
-                <Input
-                  id="departure"
-                  value={formData.departure_location}
-                  onChange={(e) =>
-                    setFormData({ ...formData, departure_location: e.target.value })
-                  }
-                  placeholder="e.g., Los Angeles, CA"
-                  required
-                  className="h-11"
-                />
-              </div>
+              {mapsLoaded ? (
+                <>
+                  <LocationAutocomplete
+                    id="departure"
+                    label="Departure Location"
+                    value={formData.departure_location}
+                    onChange={(value, place) => {
+                      setFormData({ ...formData, departure_location: value });
+                      if (place) setDeparturePlace(place);
+                    }}
+                    placeholder="e.g., Los Angeles, CA"
+                    required
+                  />
 
-              <div className="space-y-2">
-                <Label htmlFor="arrival" className="text-base font-medium">Arrival Location *</Label>
-                <Input
-                  id="arrival"
-                  value={formData.arrival_location}
-                  onChange={(e) =>
-                    setFormData({ ...formData, arrival_location: e.target.value })
-                  }
-                  placeholder="e.g., Camp Sequoia Lake"
-                  required
-                  className="h-11"
-                />
-              </div>
+                  <LocationAutocomplete
+                    id="arrival"
+                    label="Arrival Location"
+                    value={formData.arrival_location}
+                    onChange={(value, place) => {
+                      setFormData({ ...formData, arrival_location: value });
+                      if (place) setArrivalPlace(place);
+                    }}
+                    placeholder="e.g., Camp Sequoia Lake"
+                    required
+                  />
+
+                  <TripRouteMap
+                    departureLocation={departurePlace}
+                    arrivalLocation={arrivalPlace}
+                  />
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="departure" className="text-base font-medium">Departure Location *</Label>
+                    <Input
+                      id="departure"
+                      value={formData.departure_location}
+                      onChange={(e) =>
+                        setFormData({ ...formData, departure_location: e.target.value })
+                      }
+                      placeholder="e.g., Los Angeles, CA"
+                      required
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="arrival" className="text-base font-medium">Arrival Location *</Label>
+                    <Input
+                      id="arrival"
+                      value={formData.arrival_location}
+                      onChange={(e) =>
+                        setFormData({ ...formData, arrival_location: e.target.value })
+                      }
+                      placeholder="e.g., Camp Sequoia Lake"
+                      required
+                      className="h-11"
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="route" className="text-base font-medium">Route Description (Optional)</Label>
