@@ -14,6 +14,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
 import { FilterSelect } from "@/components/FilterSelect";
 import { SkeletonCard } from "@/components/SkeletonCard";
+import AdminGuard from "@/components/AdminGuard";
 
 interface Profile {
   id: string;
@@ -50,7 +51,6 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
   
   // Search and filter states
   const [userSearch, setUserSearch] = useState("");
@@ -68,45 +68,12 @@ const Admin = () => {
   }>({ open: false, userId: "", userName: "", action: "add" });
 
   useEffect(() => {
-    checkAdminAndLoadData();
+    loadData();
   }, []);
 
-  const checkAdminAndLoadData = async () => {
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
-
-      // Check if user is admin
-      const { data: adminRole } = await supabase
-        .from("user_roles")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-
-      if (!adminRole) {
-        toast.error("Access denied. Admin privileges required.");
-        navigate("/dashboard");
-        return;
-      }
-
-      setIsAdmin(true);
-      await loadData();
-    } catch (error: any) {
-      toast.error("Unable to verify admin access. Please try again.");
-      navigate("/dashboard");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const loadData = async () => {
+    setLoading(true);
+
     try {
       // Load all users
       const { data: usersData, error: usersError } = await supabase
@@ -145,6 +112,8 @@ const Admin = () => {
       setTrips(tripsData as any);
     } catch (error: any) {
       toast.error("Unable to load admin data. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -251,42 +220,40 @@ const Admin = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <header className="border-b border-nav/20 bg-nav shadow-md">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img src={campLogo} alt="Camp Sequoia Lake Logo" className="h-10 w-auto" />
-              <div>
-                <h1 className="text-xl font-bold text-nav-foreground">Admin Dashboard</h1>
-                <p className="text-sm text-nav-foreground/80">Loading...</p>
+      <AdminGuard>
+        <div className="min-h-screen bg-background">
+          <header className="border-b border-nav/20 bg-nav shadow-md">
+            <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img src={campLogo} alt="Camp Sequoia Lake Logo" className="h-10 w-auto" />
+                <div>
+                  <h1 className="text-xl font-bold text-nav-foreground">Admin Dashboard</h1>
+                  <p className="text-sm text-nav-foreground/80">Loading...</p>
+                </div>
               </div>
             </div>
-          </div>
-        </header>
-        <main className="container mx-auto px-4 py-8">
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-          </div>
-          <div className="space-y-4">
-            <SkeletonCard />
-            <SkeletonCard />
-          </div>
-        </main>
-      </div>
+          </header>
+          <main className="container mx-auto px-4 py-8">
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+            <div className="space-y-4">
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+          </main>
+        </div>
+      </AdminGuard>
     );
-  }
-
-  if (!isAdmin) {
-    return null;
   }
 
   const drivers = users.filter((u) => u.roles.includes("driver"));
   const passengers = users.filter((u) => u.roles.includes("passenger") || u.roles.length === 0);
 
   return (
-    <>
+    <AdminGuard>
       <ConfirmDialog
         open={confirmDialog.open}
         onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
@@ -578,7 +545,7 @@ const Admin = () => {
         </Tabs>
       </main>
     </div>
-    </>
+    </AdminGuard>
   );
 };
 
