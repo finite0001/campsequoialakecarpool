@@ -12,9 +12,11 @@ serve(async (req) => {
   }
 
   try {
+    console.log(`[get-google-maps-key] invoked: ${new Date().toISOString()}`);
     const apiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
 
     if (!apiKey) {
+      console.error('[get-google-maps-key] Missing GOOGLE_MAPS_API_KEY');
       return new Response(
         JSON.stringify({ error: 'Google Maps API key not configured' }),
         { 
@@ -32,6 +34,7 @@ serve(async (req) => {
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[get-google-maps-key] Error:', errorMessage);
     return new Response(
       JSON.stringify({ error: errorMessage }),
       { 
