@@ -112,10 +112,7 @@ const VerifyDriver = () => {
       toast.success("Documents uploaded successfully! An admin will review them shortly.");
       navigate("/dashboard");
     } catch (error: any) {
-      if (import.meta.env.DEV) {
-        console.error("Error uploading documents:", error);
-      }
-      toast.error("Failed to upload documents. Please try again.");
+      toast.error("Unable to upload documents. Please try again.");
     } finally {
       setUploading(false);
     }

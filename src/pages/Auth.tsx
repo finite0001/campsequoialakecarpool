@@ -9,9 +9,20 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { Car } from "lucide-react";
 import campLogo from "@/assets/camp-logo.png";
+import { z } from "zod";
 
 type AuthMode = "signin" | "signup";
 type UserRole = "driver" | "passenger";
+
+// Validation schemas
+const emailSchema = z.string().trim().email("Invalid email address");
+
+const passwordSchema = z.string()
+  .min(10, "Password must be at least 10 characters")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number")
+  .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character");
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -50,11 +61,18 @@ const Auth = () => {
       return;
     }
 
+    // Validate email
+    const emailValidation = emailSchema.safeParse(email);
+    if (!emailValidation.success) {
+      toast.error(emailValidation.error.errors[0].message);
+      return;
+    }
+
     setLoading(true);
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: emailValidation.data,
         password,
       });
 
@@ -62,14 +80,14 @@ const Auth = () => {
         if (error.message.includes("Invalid login credentials")) {
           toast.error("Invalid email or password");
         } else {
-          toast.error(error.message);
+          toast.error("Unable to sign in. Please try again.");
         }
         return;
       }
 
       toast.success("Welcome back!");
     } catch (error: any) {
-      toast.error(error.message || "An error occurred");
+      toast.error("Unable to sign in. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -83,8 +101,28 @@ const Auth = () => {
       return;
     }
 
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    // Validate email
+    const emailValidation = emailSchema.safeParse(email);
+    if (!emailValidation.success) {
+      toast.error(emailValidation.error.errors[0].message);
+      return;
+    }
+
+    // Validate password
+    const passwordValidation = passwordSchema.safeParse(password);
+    if (!passwordValidation.success) {
+      toast.error(passwordValidation.error.errors[0].message);
+      return;
+    }
+
+    // Validate full name
+    if (fullName.trim().length < 2) {
+      toast.error("Full name must be at least 2 characters");
+      return;
+    }
+
+    if (fullName.trim().length > 100) {
+      toast.error("Full name must be less than 100 characters");
       return;
     }
 
@@ -92,13 +130,13 @@ const Auth = () => {
 
     try {
       const { error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: emailValidation.data,
+        password: passwordValidation.data,
         options: {
           emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
-            full_name: fullName,
-            phone: phone || null,
+            full_name: fullName.trim(),
+            phone: phone?.trim() || null,
             role: role,
           },
         },
@@ -108,7 +146,7 @@ const Auth = () => {
         if (error.message.includes("already registered")) {
           toast.error("This email is already registered. Please sign in instead.");
         } else {
-          toast.error(error.message);
+          toast.error("Unable to create account. Please try again.");
         }
         return;
       }
@@ -116,7 +154,7 @@ const Auth = () => {
       toast.success("Account created! You can now sign in.");
       setMode("signin");
     } catch (error: any) {
-      toast.error(error.message || "An error occurred");
+      toast.error("Unable to create account. Please try again.");
     } finally {
       setLoading(false);
     }

@@ -85,10 +85,7 @@ const Dashboard = () => {
       // Load stats
       await loadStats(session.user.id, roles.includes("driver"));
     } catch (error: any) {
-      if (import.meta.env.DEV) {
-        console.error("Error loading profile:", error);
-      }
-      toast.error("Failed to load profile");
+      toast.error("Unable to load profile. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -157,10 +154,7 @@ const Dashboard = () => {
       setHasAcknowledgedLiability(true);
       toast.success("Liability release acknowledged");
     } catch (error: any) {
-      if (import.meta.env.DEV) {
-        console.error("Error acknowledging liability:", error);
-      }
-      toast.error("Failed to acknowledge liability release");
+      toast.error("Unable to acknowledge liability release. Please try again.");
     }
   };
 

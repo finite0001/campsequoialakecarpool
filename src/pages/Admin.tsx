@@ -99,10 +99,7 @@ const Admin = () => {
       setIsAdmin(true);
       await loadData();
     } catch (error: any) {
-      if (import.meta.env.DEV) {
-        console.error("Error checking admin status:", error);
-      }
-      toast.error("Failed to verify admin access");
+      toast.error("Unable to verify admin access. Please try again.");
       navigate("/dashboard");
     } finally {
       setLoading(false);
@@ -147,10 +144,7 @@ const Admin = () => {
       if (tripsError) throw tripsError;
       setTrips(tripsData as any);
     } catch (error: any) {
-      if (import.meta.env.DEV) {
-        console.error("Error loading data:", error);
-      }
-      toast.error("Failed to load admin data");
+      toast.error("Unable to load admin data. Please try again.");
     }
   };
 
@@ -178,10 +172,7 @@ const Admin = () => {
 
       await loadData();
     } catch (error: any) {
-      if (import.meta.env.DEV) {
-        console.error("Error toggling admin role:", error);
-      }
-      toast.error("Failed to update admin role");
+      toast.error("Unable to update admin role. Please try again.");
     }
   };
 

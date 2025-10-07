@@ -9,6 +9,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ArrowLeft, Plus } from "lucide-react";
 import campLogo from "@/assets/camp-logo.png";
+import { z } from "zod";
+
+// Validation schema for trip creation
+const tripSchema = z.object({
+  departure_location: z.string().trim().min(3, "Departure location must be at least 3 characters").max(200, "Departure location must be less than 200 characters"),
+  arrival_location: z.string().trim().min(3, "Arrival location must be at least 3 characters").max(200, "Arrival location must be less than 200 characters"),
+  route_description: z.string().max(1000, "Route description must be less than 1000 characters").optional(),
+  departure_datetime: z.string().min(1, "Departure date and time is required"),
+  total_seats: z.number().int().min(1, "Must have at least 1 seat").max(8, "Cannot exceed 8 seats"),
+  fuel_cost: z.number().positive("Fuel cost must be positive").optional(),
+});
 
 const CreateTrip = () => {
   const navigate = useNavigate();
@@ -25,13 +36,20 @@ const CreateTrip = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.departure_location || !formData.arrival_location || !formData.departure_datetime) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
+    // Prepare data for validation
+    const tripData = {
+      departure_location: formData.departure_location,
+      arrival_location: formData.arrival_location,
+      route_description: formData.route_description || undefined,
+      departure_datetime: formData.departure_datetime,
+      total_seats: formData.total_seats,
+      fuel_cost: formData.fuel_cost ? parseFloat(formData.fuel_cost) : undefined,
+    };
 
-    if (formData.total_seats < 1) {
-      toast.error("Must have at least 1 available seat");
+    // Validate with zod
+    const validation = tripSchema.safeParse(tripData);
+    if (!validation.success) {
+      toast.error(validation.error.errors[0].message);
       return;
     }
 
@@ -47,15 +65,17 @@ const CreateTrip = () => {
         return;
       }
 
+      const validatedData = validation.data;
+
       const { error } = await supabase.from("trips").insert({
         driver_id: session.user.id,
-        departure_location: formData.departure_location,
-        arrival_location: formData.arrival_location,
-        route_description: formData.route_description || null,
-        departure_datetime: formData.departure_datetime,
-        total_seats: formData.total_seats,
-        available_seats: formData.total_seats,
-        fuel_cost: formData.fuel_cost ? parseFloat(formData.fuel_cost) : null,
+        departure_location: validatedData.departure_location,
+        arrival_location: validatedData.arrival_location,
+        route_description: validatedData.route_description || null,
+        departure_datetime: validatedData.departure_datetime,
+        total_seats: validatedData.total_seats,
+        available_seats: validatedData.total_seats,
+        fuel_cost: validatedData.fuel_cost || null,
       });
 
       if (error) {
@@ -63,7 +83,7 @@ const CreateTrip = () => {
           toast.error("You must upload and get approved for driver documents before creating trips");
           navigate("/dashboard");
         } else {
-          throw error;
+          toast.error("Unable to create trip. Please try again.");
         }
         return;
       }
@@ -71,10 +91,7 @@ const CreateTrip = () => {
       toast.success("Trip created successfully!");
       navigate("/my-trips");
     } catch (error: any) {
-      if (import.meta.env.DEV) {
-        console.error("Error creating trip:", error);
-      }
-      toast.error("Failed to create trip");
+      toast.error("Unable to create trip. Please try again.");
     } finally {
       setLoading(false);
     }
