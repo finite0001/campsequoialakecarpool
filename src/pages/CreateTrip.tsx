@@ -99,17 +99,17 @@ const CreateTrip = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Create New Trip</CardTitle>
-            <CardDescription>
-              Offer a ride to Camp Sequoia Lake and share the journey
+        <Card className="border-2 hover:shadow-xl transition-all duration-300 animate-fade-in">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-3xl">Create New Trip</CardTitle>
+            <CardDescription className="text-base">
+              Offer a ride to Camp Sequoia Lake and share the journey with fellow staff members
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="departure">Departure Location *</Label>
+                <Label htmlFor="departure" className="text-base font-medium">Departure Location *</Label>
                 <Input
                   id="departure"
                   value={formData.departure_location}
@@ -118,11 +118,12 @@ const CreateTrip = () => {
                   }
                   placeholder="e.g., Los Angeles, CA"
                   required
+                  className="h-11"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="arrival">Arrival Location *</Label>
+                <Label htmlFor="arrival" className="text-base font-medium">Arrival Location *</Label>
                 <Input
                   id="arrival"
                   value={formData.arrival_location}
@@ -131,11 +132,12 @@ const CreateTrip = () => {
                   }
                   placeholder="e.g., Camp Sequoia Lake"
                   required
+                  className="h-11"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="route">Route Description (Optional)</Label>
+                <Label htmlFor="route" className="text-base font-medium">Route Description (Optional)</Label>
                 <Textarea
                   id="route"
                   value={formData.route_description}
@@ -144,11 +146,12 @@ const CreateTrip = () => {
                   }
                   placeholder="Describe your planned route, any stops, or special instructions..."
                   rows={3}
+                  className="resize-none"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="datetime">Departure Date & Time *</Label>
+                <Label htmlFor="datetime" className="text-base font-medium">Departure Date & Time *</Label>
                 <Input
                   id="datetime"
                   type="datetime-local"
@@ -157,51 +160,63 @@ const CreateTrip = () => {
                     setFormData({ ...formData, departure_datetime: e.target.value })
                   }
                   required
+                  className="h-11"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="seats">Available Seats *</Label>
-                <Input
-                  id="seats"
-                  type="number"
-                  min="1"
-                  max="8"
-                  value={formData.total_seats}
-                  onChange={(e) =>
-                    setFormData({ ...formData, total_seats: parseInt(e.target.value) })
-                  }
-                  required
-                />
-                <p className="text-sm text-muted-foreground">
-                  How many passengers can you take?
-                </p>
+              <div className="grid sm:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="seats" className="text-base font-medium">Available Seats *</Label>
+                  <Input
+                    id="seats"
+                    type="number"
+                    min="1"
+                    max="8"
+                    value={formData.total_seats}
+                    onChange={(e) =>
+                      setFormData({ ...formData, total_seats: parseInt(e.target.value) })
+                    }
+                    required
+                    className="h-11"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    How many passengers can you take?
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cost" className="text-base font-medium">Total Fuel Cost (Optional)</Label>
+                  <Input
+                    id="cost"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.fuel_cost}
+                    onChange={(e) =>
+                      setFormData({ ...formData, fuel_cost: e.target.value })
+                    }
+                    placeholder="0.00"
+                    className="h-11"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Passengers coordinate payment
+                  </p>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="cost">Total Fuel Cost (Optional)</Label>
-                <Input
-                  id="cost"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.fuel_cost}
-                  onChange={(e) =>
-                    setFormData({ ...formData, fuel_cost: e.target.value })
-                  }
-                  placeholder="0.00"
-                />
-                <p className="text-sm text-muted-foreground">
-                  Passengers can coordinate payment directly with you
-                </p>
-              </div>
-
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button 
+                type="submit" 
+                className="w-full h-12 text-base font-medium hover:scale-[1.02] transition-transform" 
+                disabled={loading}
+              >
                 {loading ? (
-                  "Creating..."
+                  <>
+                    <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Creating Trip...
+                  </>
                 ) : (
                   <>
-                    <Plus className="w-4 h-4 mr-2" />
+                    <Plus className="w-5 h-5 mr-2" />
                     Create Trip
                   </>
                 )}

@@ -168,10 +168,16 @@ const Admin = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading admin dashboard...</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center animate-fade-in">
+          <div className="relative">
+            <div className="h-16 w-16 mx-auto mb-6">
+              <div className="absolute inset-0 rounded-full border-4 border-secondary/20"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-secondary border-t-transparent animate-spin"></div>
+            </div>
+          </div>
+          <h3 className="text-lg font-semibold mb-2">Loading admin dashboard...</h3>
+          <p className="text-sm text-muted-foreground">Preparing management tools</p>
         </div>
       </div>
     );
@@ -211,31 +217,49 @@ const Admin = () => {
           <p className="text-muted-foreground">Manage all carpools and users</p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Total Users</CardTitle>
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <Card className="border-2 hover:border-primary/50 hover:shadow-lg transition-all duration-300 animate-fade-up">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-medium text-muted-foreground">Total Users</CardTitle>
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Users className="w-5 h-5 text-primary" />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{users.length}</p>
+              <p className="text-4xl font-bold">{users.length}</p>
+              <p className="text-sm text-muted-foreground mt-1">Registered staff members</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Drivers</CardTitle>
+          <Card className="border-2 hover:border-success/50 hover:shadow-lg transition-all duration-300 animate-fade-up" style={{ animationDelay: "0.1s" }}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-medium text-muted-foreground">Drivers</CardTitle>
+                <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
+                  <Car className="w-5 h-5 text-success" />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{drivers.length}</p>
+              <p className="text-4xl font-bold text-success">{drivers.length}</p>
+              <p className="text-sm text-muted-foreground mt-1">Verified drivers offering rides</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Total Trips</CardTitle>
+          <Card className="border-2 hover:border-accent/50 hover:shadow-lg transition-all duration-300 animate-fade-up" style={{ animationDelay: "0.2s" }}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-medium text-muted-foreground">Total Trips</CardTitle>
+                <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                  <Car className="w-5 h-5 text-accent" />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{trips.length}</p>
+              <p className="text-4xl font-bold text-accent">{trips.length}</p>
+              <p className="text-sm text-muted-foreground mt-1">Active and upcoming carpools</p>
             </CardContent>
           </Card>
         </div>

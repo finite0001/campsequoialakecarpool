@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Upload, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Upload, ArrowLeft, CheckCircle2, Shield } from "lucide-react";
 import campLogo from "@/assets/camp-logo.png";
 
 const VerifyDriver = () => {
@@ -140,76 +140,87 @@ const VerifyDriver = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Driver Verification</CardTitle>
-            <CardDescription>
+        <Card className="border-2 hover:shadow-xl transition-all duration-300 animate-fade-in">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-3xl">Driver Verification</CardTitle>
+            <CardDescription className="text-base">
               Upload your driver's license and insurance card to become a verified driver
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="dl" className="text-base">
+              <div className="space-y-3">
+                <Label htmlFor="dl" className="text-base font-medium flex items-center gap-2">
                   Driver's License *
+                  {dlFile && <CheckCircle2 className="w-4 h-4 text-success" />}
                 </Label>
-                <div className="flex items-center gap-4">
-                  <Input
-                    id="dl"
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => handleFileChange(e, "dl")}
-                    className="cursor-pointer"
-                  />
-                  {dlFile && (
-                    <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
-                  )}
-                </div>
+                <Input
+                  id="dl"
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,application/pdf"
+                  onChange={(e) => handleFileChange(e, "dl")}
+                  className="cursor-pointer h-11 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                />
                 <p className="text-sm text-muted-foreground">
                   Upload a clear photo of your driver's license (front side)
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="insurance" className="text-base">
+              <div className="space-y-3">
+                <Label htmlFor="insurance" className="text-base font-medium flex items-center gap-2">
                   Insurance Card *
+                  {insuranceFile && <CheckCircle2 className="w-4 h-4 text-success" />}
                 </Label>
-                <div className="flex items-center gap-4">
-                  <Input
-                    id="insurance"
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => handleFileChange(e, "insurance")}
-                    className="cursor-pointer"
-                  />
-                  {insuranceFile && (
-                    <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
-                  )}
-                </div>
+                <Input
+                  id="insurance"
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,application/pdf"
+                  onChange={(e) => handleFileChange(e, "insurance")}
+                  className="cursor-pointer h-11 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                />
                 <p className="text-sm text-muted-foreground">
                   Upload a clear photo of your current insurance card
                 </p>
               </div>
 
-              <div className="bg-muted p-4 rounded-lg space-y-2">
-                <h4 className="font-medium">Important Notes:</h4>
-                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                  <li>Files must be less than 5MB</li>
-                  <li>Accepted formats: JPG, PNG, PDF</li>
-                  <li>An admin will review your documents before approval</li>
-                  <li>Your information is kept secure and private</li>
+              <div className="bg-gradient-to-br from-muted to-muted/50 p-6 rounded-lg border-2 border-muted space-y-3">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-primary" />
+                  Important Notes:
+                </h4>
+                <ul className="text-sm text-muted-foreground space-y-2">
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-primary rounded-full mt-1.5 flex-shrink-0"></div>
+                    Files must be less than 5MB
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-primary rounded-full mt-1.5 flex-shrink-0"></div>
+                    Accepted formats: JPG, PNG, PDF
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-primary rounded-full mt-1.5 flex-shrink-0"></div>
+                    An admin will review your documents before approval
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-primary rounded-full mt-1.5 flex-shrink-0"></div>
+                    Your information is kept secure and private
+                  </li>
                 </ul>
               </div>
 
-              <Button type="submit" className="w-full" disabled={uploading || !dlFile || !insuranceFile}>
+              <Button 
+                type="submit" 
+                className="w-full h-12 text-base font-medium hover:scale-[1.02] transition-transform" 
+                disabled={uploading || !dlFile || !insuranceFile}
+              >
                 {uploading ? (
                   <>
-                    <Upload className="w-4 h-4 mr-2 animate-pulse" />
-                    Uploading...
+                    <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Uploading Documents...
                   </>
                 ) : (
                   <>
-                    <Upload className="w-4 h-4 mr-2" />
+                    <Upload className="w-5 h-5 mr-2" />
                     Submit Documents
                   </>
                 )}

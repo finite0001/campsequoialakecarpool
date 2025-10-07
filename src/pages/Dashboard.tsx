@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Car, Users, Plus, Shield, CheckCircle2, AlertCircle } from "lucide-react";
+import { LogOut, Car, Users, Plus, Shield, CheckCircle2, AlertCircle, Upload } from "lucide-react";
 import { toast } from "sonner";
 import campLogo from "@/assets/camp-logo.png";
 
@@ -117,10 +117,16 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center animate-fade-in">
+          <div className="relative">
+            <div className="h-16 w-16 mx-auto mb-6">
+              <div className="absolute inset-0 rounded-full border-4 border-primary/20"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+            </div>
+          </div>
+          <h3 className="text-lg font-semibold mb-2">Loading your dashboard...</h3>
+          <p className="text-sm text-muted-foreground">Please wait a moment</p>
         </div>
       </div>
     );
@@ -149,14 +155,22 @@ const Dashboard = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Welcome, {profile?.full_name}!</h2>
+        <div className="mb-8 animate-fade-in">
+          <h2 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Welcome, {profile?.full_name}!
+          </h2>
           <div className="flex items-center gap-2">
-            <Badge variant={isDriver ? "default" : "secondary"}>
-              {isDriver ? "Driver" : "Passenger"}
+            <Badge 
+              variant={isDriver ? "default" : "secondary"}
+              className="text-sm px-3 py-1"
+            >
+              {isDriver ? "🚗 Driver" : "🎒 Passenger"}
             </Badge>
             {isAdmin && (
-              <Badge variant="outline" className="border-accent text-accent">
+              <Badge 
+                variant="outline" 
+                className="border-secondary text-secondary text-sm px-3 py-1 bg-secondary/5"
+              >
                 <Shield className="w-3 h-3 mr-1" />
                 Admin
               </Badge>
@@ -165,24 +179,26 @@ const Dashboard = () => {
         </div>
 
         {!hasAcknowledgedLiability && (
-          <Card className="mb-6 border-warning bg-warning/5">
+          <Card className="mb-6 border-2 border-warning bg-gradient-to-br from-warning/5 to-warning/10 animate-fade-in shadow-lg">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-warning" />
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="w-10 h-10 bg-warning/20 rounded-lg flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-warning" />
+                </div>
                 Liability Release Required
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-base mt-2">
                 Before using the carpool system, please review and acknowledge the liability release.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm">
+              <p className="text-sm leading-relaxed">
                 By participating in the carpool program, you acknowledge that Camp Sequoia Lake is not responsible for any incidents, accidents, or damages that may occur while using private vehicles for transportation to and from camp activities.
               </p>
-              <div className="flex gap-2">
+              <div className="flex gap-3 pt-2">
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="default"
                   onClick={() =>
                     window.open(
                       "https://example.com/liability-release",
@@ -192,7 +208,11 @@ const Dashboard = () => {
                 >
                   View Full Release
                 </Button>
-                <Button size="sm" onClick={handleAcknowledgeLiability}>
+                <Button 
+                  size="default" 
+                  onClick={handleAcknowledgeLiability}
+                  className="hover:scale-105 transition-transform"
+                >
                   <CheckCircle2 className="w-4 h-4 mr-2" />
                   I Acknowledge
                 </Button>
@@ -202,18 +222,25 @@ const Dashboard = () => {
         )}
 
         {isDriver && !hasVerifiedDocuments && hasAcknowledgedLiability && (
-          <Card className="mb-6 border-accent bg-accent/5">
+          <Card className="mb-6 border-2 border-accent bg-gradient-to-br from-accent/5 to-accent/10 animate-fade-in shadow-lg">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-accent" />
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="w-10 h-10 bg-accent/20 rounded-lg flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-accent" />
+                </div>
                 Driver Verification Required
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-base mt-2">
                 Upload your driver's license and insurance card to start offering rides.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => navigate("/verify-driver")}>
+              <Button 
+                onClick={() => navigate("/verify-driver")}
+                size="lg"
+                className="hover:scale-105 transition-transform"
+              >
+                <Upload className="w-5 h-5 mr-2" />
                 Upload Documents
               </Button>
             </CardContent>
@@ -221,12 +248,15 @@ const Dashboard = () => {
         )}
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/trips")}>
+          <Card 
+            className="group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 animate-fade-up" 
+            onClick={() => navigate("/trips")}
+          >
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Car className="w-5 h-5" />
-                Browse Trips
-              </CardTitle>
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <Car className="w-6 h-6 text-primary" />
+              </div>
+              <CardTitle className="text-xl">Browse Trips</CardTitle>
               <CardDescription>Find available carpools</CardDescription>
             </CardHeader>
             <CardContent>
@@ -237,12 +267,16 @@ const Dashboard = () => {
           </Card>
 
           {isDriver && hasVerifiedDocuments && (
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/create-trip")}>
+            <Card 
+              className="group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer border-2 hover:border-success/50 animate-fade-up" 
+              style={{ animationDelay: "0.1s" }}
+              onClick={() => navigate("/create-trip")}
+            >
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  Create Trip
-                </CardTitle>
+                <div className="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <Plus className="w-6 h-6 text-success" />
+                </div>
+                <CardTitle className="text-xl">Create Trip</CardTitle>
                 <CardDescription>Offer a ride to camp</CardDescription>
               </CardHeader>
               <CardContent>
@@ -253,12 +287,16 @@ const Dashboard = () => {
             </Card>
           )}
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/my-trips")}>
+          <Card 
+            className="group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer border-2 hover:border-accent/50 animate-fade-up" 
+            style={{ animationDelay: "0.2s" }}
+            onClick={() => navigate("/my-trips")}
+          >
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                My Trips
-              </CardTitle>
+              <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <Users className="w-6 h-6 text-accent" />
+              </div>
+              <CardTitle className="text-xl">My Trips</CardTitle>
               <CardDescription>View your carpools</CardDescription>
             </CardHeader>
             <CardContent>
@@ -271,11 +309,18 @@ const Dashboard = () => {
           </Card>
 
           {isAdmin && (
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-accent" onClick={() => navigate("/admin")}>
+            <Card 
+              className="group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer border-2 border-secondary/30 hover:border-secondary animate-fade-up bg-gradient-to-br from-card to-secondary/5" 
+              style={{ animationDelay: "0.3s" }}
+              onClick={() => navigate("/admin")}
+            >
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="w-5 h-5" />
+                <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <Shield className="w-6 h-6 text-secondary" />
+                </div>
+                <CardTitle className="text-xl flex items-center gap-2">
                   Admin Dashboard
+                  <Badge variant="outline" className="border-secondary text-secondary">Admin</Badge>
                 </CardTitle>
                 <CardDescription>Manage all carpools</CardDescription>
               </CardHeader>

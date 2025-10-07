@@ -113,10 +113,16 @@ const Trips = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading trips...</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center animate-fade-in">
+          <div className="relative">
+            <div className="h-16 w-16 mx-auto mb-6">
+              <div className="absolute inset-0 rounded-full border-4 border-primary/20"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+            </div>
+          </div>
+          <h3 className="text-lg font-semibold mb-2">Loading trips...</h3>
+          <p className="text-sm text-muted-foreground">Finding available carpools</p>
         </div>
       </div>
     );
@@ -147,74 +153,98 @@ const Trips = () => {
         </div>
 
         {trips.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Car className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No trips available</h3>
-              <p className="text-muted-foreground">Check back later or create your own trip if you're a driver</p>
+          <Card className="border-2 border-dashed animate-fade-in">
+            <CardContent className="py-16 text-center">
+              <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+                <Car className="w-10 h-10 text-muted-foreground" />
+              </div>
+              <h3 className="text-2xl font-bold mb-2">No trips available yet</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                Check back later or create your own trip if you're a verified driver
+              </p>
+              <Button onClick={() => navigate("/dashboard")} variant="outline">
+                Back to Dashboard
+              </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
-            {trips.map((trip) => {
+            {trips.map((trip, index) => {
               const isJoined = trip.participants.some(
                 (p) => p.passenger_id === currentUserId
               );
               const isFull = trip.available_seats === 0;
 
               return (
-                <Card key={trip.id} className={isFull ? "opacity-75" : ""}>
+                <Card 
+                  key={trip.id} 
+                  className={`group hover:shadow-xl transition-all duration-300 animate-fade-up ${
+                    isFull ? "opacity-75" : "hover:scale-[1.02] border-2 hover:border-primary/30"
+                  }`}
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
                   <CardHeader>
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <CardTitle className="text-xl mb-2">
+                        <CardTitle className="text-xl mb-2 group-hover:text-primary transition-colors">
                           {trip.departure_location} → {trip.arrival_location}
                         </CardTitle>
-                        <CardDescription>Driven by {trip.driver.full_name}</CardDescription>
+                        <CardDescription className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-success rounded-full"></div>
+                          Driven by {trip.driver.full_name}
+                        </CardDescription>
                       </div>
-                      <Badge variant={isFull ? "secondary" : "default"}>
+                      <Badge 
+                        variant={isFull ? "secondary" : "default"}
+                        className="flex-shrink-0"
+                      >
                         {trip.available_seats}/{trip.total_seats} seats
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="w-4 h-4" />
-                        <span>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
+                        <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
+                        <span className="font-medium">
                           {format(new Date(trip.departure_datetime), "PPP 'at' p")}
                         </span>
                       </div>
 
                       {trip.route_description && (
-                        <div className="flex items-start gap-2 text-muted-foreground">
-                          <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                          <span>{trip.route_description}</span>
+                        <div className="flex items-start gap-3 p-2">
+                          <MapPin className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                          <span className="text-muted-foreground">{trip.route_description}</span>
                         </div>
                       )}
 
                       {trip.fuel_cost && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <DollarSign className="w-4 h-4" />
-                          <span>Total fuel cost: ${trip.fuel_cost.toFixed(2)}</span>
+                        <div className="flex items-center gap-3 p-2 rounded-lg bg-success/5">
+                          <DollarSign className="w-4 h-4 text-success flex-shrink-0" />
+                          <span className="text-success font-medium">
+                            Total fuel cost: ${trip.fuel_cost.toFixed(2)}
+                          </span>
                         </div>
                       )}
 
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Users className="w-4 h-4" />
-                        <span>{trip.participants.length} passenger(s) joined</span>
+                      <div className="flex items-center gap-3 p-2">
+                        <Users className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        <span className="text-muted-foreground">
+                          {trip.participants.length} passenger(s) joined
+                        </span>
                       </div>
                     </div>
 
                     {isJoined ? (
-                      <Badge variant="outline" className="w-full justify-center py-2">
-                        You've joined this trip
+                      <Badge variant="outline" className="w-full justify-center py-3 border-success text-success">
+                        ✓ You've joined this trip
                       </Badge>
                     ) : (
                       <Button
-                        className="w-full"
+                        className="w-full group-hover:scale-[1.02] transition-transform"
                         onClick={() => handleJoinTrip(trip.id, trip.available_seats)}
                         disabled={isFull}
+                        variant={isFull ? "secondary" : "default"}
                       >
                         {isFull ? "Trip Full" : "Join This Trip"}
                       </Button>

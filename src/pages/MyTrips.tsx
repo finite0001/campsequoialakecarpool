@@ -156,10 +156,16 @@ const MyTrips = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading your trips...</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center animate-fade-in">
+          <div className="relative">
+            <div className="h-16 w-16 mx-auto mb-6">
+              <div className="absolute inset-0 rounded-full border-4 border-primary/20"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+            </div>
+          </div>
+          <h3 className="text-lg font-semibold mb-2">Loading your trips...</h3>
+          <p className="text-sm text-muted-foreground">Gathering your carpool information</p>
         </div>
       </div>
     );
@@ -194,94 +200,119 @@ const MyTrips = () => {
         </div>
 
         {trips.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <h3 className="text-lg font-medium mb-2">No trips yet</h3>
-              <p className="text-muted-foreground mb-4">
+          <Card className="border-2 border-dashed animate-fade-in">
+            <CardContent className="py-16 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-primary/10 to-accent/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Users className="w-10 h-10 text-primary" />
+              </div>
+              <h3 className="text-2xl font-bold mb-2">No trips yet</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                 {userRole === "driver"
-                  ? "Create your first trip to start carpooling"
-                  : "Browse available trips to join"}
+                  ? "Ready to start carpooling? Create your first trip and help others get to camp!"
+                  : "Join a trip to start your carpooling journey with fellow staff members"}
               </p>
-              <Button onClick={() => navigate(userRole === "driver" ? "/create-trip" : "/trips")}>
-                {userRole === "driver" ? "Create Trip" : "Browse Trips"}
+              <Button 
+                onClick={() => navigate(userRole === "driver" ? "/create-trip" : "/trips")}
+                size="lg"
+                className="hover:scale-105 transition-transform"
+              >
+                {userRole === "driver" ? "Create Your First Trip" : "Browse Available Trips"}
               </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-6">
-            {trips.map((trip) => {
+            {trips.map((trip, index) => {
               const isDriver = trip.driver_id === currentUserId;
               const myParticipation = trip.participants.find(
                 (p) => p.passenger_id === currentUserId
               );
 
               return (
-                <Card key={trip.id}>
+                <Card 
+                  key={trip.id}
+                  className="hover:shadow-xl transition-all duration-300 animate-fade-up border-2 hover:border-primary/30"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
                   <CardHeader>
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <CardTitle className="text-xl mb-2">
                           {trip.departure_location} → {trip.arrival_location}
                         </CardTitle>
-                        <CardDescription>
-                          {isDriver ? "You're driving" : `Driver: ${trip.driver.full_name}`}
+                        <CardDescription className="flex items-center gap-2">
+                          {isDriver ? (
+                            <>
+                              <div className="w-2 h-2 bg-primary rounded-full"></div>
+                              You're driving this trip
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-2 h-2 bg-accent rounded-full"></div>
+                              Driver: {trip.driver.full_name}
+                            </>
+                          )}
                         </CardDescription>
                       </div>
-                      <Badge>
+                      <Badge className={isDriver ? "bg-primary" : ""}>
                         {trip.available_seats}/{trip.total_seats} seats available
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="w-4 h-4" />
-                        <span>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
+                        <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
+                        <span className="font-medium">
                           {format(new Date(trip.departure_datetime), "PPP 'at' p")}
                         </span>
                       </div>
 
                       {trip.route_description && (
-                        <div className="flex items-start gap-2 text-muted-foreground">
-                          <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                          <span>{trip.route_description}</span>
+                        <div className="flex items-start gap-3 p-2">
+                          <MapPin className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                          <span className="text-muted-foreground">{trip.route_description}</span>
                         </div>
                       )}
 
                       {trip.fuel_cost && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <DollarSign className="w-4 h-4" />
-                          <span>Total fuel cost: ${trip.fuel_cost.toFixed(2)}</span>
+                        <div className="flex items-center gap-3 p-2 rounded-lg bg-success/5">
+                          <DollarSign className="w-4 h-4 text-success flex-shrink-0" />
+                          <span className="text-success font-medium">
+                            Total fuel cost: ${trip.fuel_cost.toFixed(2)}
+                          </span>
                         </div>
                       )}
                     </div>
 
                     {trip.participants.length > 0 && (
                       <div className="border-t pt-4">
-                        <h4 className="font-medium mb-2 flex items-center gap-2">
-                          <Users className="w-4 h-4" />
+                        <h4 className="font-medium mb-3 flex items-center gap-2">
+                          <Users className="w-4 h-4 text-primary" />
                           Passengers ({trip.participants.length})
                         </h4>
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           {trip.participants.map((participant) => (
                             <div
                               key={participant.id}
-                              className="text-sm text-muted-foreground flex items-center justify-between"
+                              className="text-sm flex items-center justify-between p-2 rounded-lg bg-muted/50"
                             >
-                              <span>
-                                {participant.passenger.full_name} ({participant.passenger.email})
-                              </span>
+                              <div>
+                                <span className="font-medium">{participant.passenger.full_name}</span>
+                                <span className="text-muted-foreground ml-2">({participant.passenger.email})</span>
+                              </div>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 pt-2">
                       {isDriver ? (
                         <Button
                           variant="destructive"
                           onClick={() => handleDeleteTrip(trip.id)}
+                          className="flex-1"
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
                           Delete Trip
@@ -292,6 +323,7 @@ const MyTrips = () => {
                           onClick={() =>
                             handleLeaveTrip(trip.id, myParticipation.id)
                           }
+                          className="flex-1"
                         >
                           Leave Trip
                         </Button>
