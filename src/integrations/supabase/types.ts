@@ -222,6 +222,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_trip_participants: {
+        Args: { _trip_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
