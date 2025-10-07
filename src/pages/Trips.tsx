@@ -4,11 +4,16 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Car, ExternalLink, Share2 } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Car, ExternalLink, Share2, Filter } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import campLogo from "@/assets/camp-logo.png";
 import { getGoogleMapsUrl, getGoogleMapsDirectionsUrl, copyToClipboard } from "@/lib/maps";
+import { SearchBar } from "@/components/SearchBar";
+import { EmptyState } from "@/components/EmptyState";
+import { TripDetailsDialog } from "@/components/TripDetailsDialog";
+import { SkeletonTripCard } from "@/components/SkeletonCard";
+import { FilterSelect } from "@/components/FilterSelect";
 
 interface Trip {
   id: string;
@@ -33,6 +38,10 @@ const Trips = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [seatsFilter, setSeatsFilter] = useState("all");
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
   useEffect(() => {
     loadTrips();
@@ -85,7 +94,6 @@ const Trips = () => {
 
       if (!session) return;
 
-      // Add participant - trigger handles seat decrement atomically
       const { error: participantError } = await supabase
         .from("trip_participants")
         .insert({
@@ -112,24 +120,60 @@ const Trips = () => {
     }
   };
 
+  // Filter trips based on search and filters
+  const filteredTrips = trips.filter(trip => {
+    const matchesSearch = searchQuery === "" || 
+      trip.departure_location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      trip.arrival_location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      trip.driver.full_name.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesSeats = seatsFilter === "all" ||
+      (seatsFilter === "available" && trip.available_seats > 0) ||
+      (seatsFilter === "full" && trip.available_seats === 0);
+    
+    return matchesSearch && matchesSeats;
+  });
+
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center animate-fade-in">
-          <div className="relative">
-            <div className="h-16 w-16 mx-auto mb-6">
-              <div className="absolute inset-0 rounded-full border-4 border-primary/20"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-nav/20 bg-nav shadow-md">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img src={campLogo} alt="Camp Sequoia Lake Logo" className="h-10 w-auto" />
+              <div>
+                <h1 className="text-xl font-bold text-nav-foreground">Browse Trips</h1>
+                <p className="text-sm text-nav-foreground/80">Loading...</p>
+              </div>
             </div>
           </div>
-          <h3 className="text-lg font-semibold mb-2">Loading trips...</h3>
-          <p className="text-sm text-muted-foreground">Finding available carpools</p>
-        </div>
+        </header>
+        <main className="container mx-auto px-4 py-8">
+          <div className="grid md:grid-cols-2 gap-6">
+            <SkeletonTripCard />
+            <SkeletonTripCard />
+            <SkeletonTripCard />
+            <SkeletonTripCard />
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
+    <>
+      <TripDetailsDialog
+        trip={selectedTrip}
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+        onJoin={() => {
+          if (selectedTrip) {
+            handleJoinTrip(selectedTrip.id, selectedTrip.available_seats);
+          }
+        }}
+        isJoined={selectedTrip ? selectedTrip.participants.some(p => p.passenger_id === currentUserId) : false}
+        currentUserId={currentUserId}
+      />
     <div className="min-h-screen bg-background">
       <header className="border-b border-nav/20 bg-nav shadow-md">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -152,29 +196,50 @@ const Trips = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Available Trips</h1>
           <p className="text-muted-foreground">Browse and join upcoming carpools to Camp Sequoia Lake</p>
         </div>
 
-        {trips.length === 0 ? (
-          <Card className="border-2 border-dashed animate-fade-in">
-            <CardContent className="py-16 text-center">
-              <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
-                <Car className="w-10 h-10 text-muted-foreground" />
-              </div>
-              <h3 className="text-2xl font-bold mb-2">No trips available yet</h3>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Check back later or create your own trip if you're a verified driver
-              </p>
-              <Button onClick={() => navigate("/dashboard")} variant="outline">
-                Back to Dashboard
-              </Button>
-            </CardContent>
-          </Card>
+        <div className="mb-6 space-y-4">
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <SearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search by location or driver..."
+              />
+            </div>
+            <FilterSelect
+              value={seatsFilter}
+              onChange={setSeatsFilter}
+              options={[
+                { value: "all", label: "All Trips" },
+                { value: "available", label: "Available Seats" },
+                { value: "full", label: "Full Trips" }
+              ]}
+              placeholder="Filter by seats"
+            />
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Filter className="w-4 h-4" />
+            Showing {filteredTrips.length} of {trips.length} trips
+          </div>
+        </div>
+
+        {filteredTrips.length === 0 ? (
+          <EmptyState
+            icon={Car}
+            title={trips.length === 0 ? "No trips available yet" : "No trips match your filters"}
+            description={trips.length === 0 
+              ? "Check back later or create your own trip if you're a verified driver"
+              : "Try adjusting your search or filter criteria"}
+            actionLabel="Back to Dashboard"
+            onAction={() => navigate("/dashboard")}
+          />
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
-            {trips.map((trip, index) => {
+            {filteredTrips.map((trip, index) => {
               const isJoined = trip.participants.some(
                 (p) => p.passenger_id === currentUserId
               );
@@ -183,10 +248,14 @@ const Trips = () => {
               return (
                 <Card 
                   key={trip.id} 
-                  className={`group hover:shadow-xl transition-all duration-300 animate-fade-up ${
+                  className={`group hover:shadow-xl transition-all duration-300 animate-fade-up cursor-pointer ${
                     isFull ? "opacity-75" : "hover:scale-[1.02] border-2 hover:border-primary/30"
                   }`}
                   style={{ animationDelay: `${index * 0.05}s` }}
+                  onClick={() => {
+                    setSelectedTrip(trip);
+                    setDetailsDialogOpen(true);
+                  }}
                 >
                   <CardHeader>
                     <div className="flex items-start justify-between gap-4">
@@ -216,91 +285,40 @@ const Trips = () => {
                         </span>
                       </div>
 
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <a
-                            href={getGoogleMapsUrl(trip.departure_location)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 p-2 rounded-lg hover:bg-accent/10 transition-colors flex-1 group/link"
-                          >
-                            <MapPin className="w-4 h-4 text-accent flex-shrink-0" />
-                            <span className="text-muted-foreground group-hover/link:text-accent transition-colors">
-                              From: {trip.departure_location}
-                            </span>
-                            <ExternalLink className="w-3 h-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
-                          </a>
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <a
-                            href={getGoogleMapsUrl(trip.arrival_location)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 p-2 rounded-lg hover:bg-success/10 transition-colors flex-1 group/link"
-                          >
-                            <MapPin className="w-4 h-4 text-success flex-shrink-0" />
-                            <span className="text-muted-foreground group-hover/link:text-success transition-colors">
-                              To: {trip.arrival_location}
-                            </span>
-                            <ExternalLink className="w-3 h-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
-                          </a>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                          onClick={async () => {
-                            const directionsUrl = getGoogleMapsDirectionsUrl(
-                              trip.departure_location,
-                              trip.arrival_location
-                            );
-                            await copyToClipboard(directionsUrl);
-                            toast.success("Directions link copied to clipboard!");
-                          }}
-                        >
-                          <Share2 className="w-3 h-3 mr-2" />
-                          Share Directions
-                        </Button>
+                      <div className="flex items-center gap-2 p-2">
+                        <MapPin className="w-4 h-4 text-accent flex-shrink-0" />
+                        <span className="text-muted-foreground truncate">
+                          {trip.departure_location}
+                        </span>
                       </div>
-
-                      {trip.route_description && (
-                        <div className="flex items-start gap-3 p-2 border-t pt-3">
-                          <MapPin className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
-                          <span className="text-muted-foreground">{trip.route_description}</span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2 p-2">
+                        <MapPin className="w-4 h-4 text-success flex-shrink-0" />
+                        <span className="text-muted-foreground truncate">
+                          {trip.arrival_location}
+                        </span>
+                      </div>
 
                       {trip.fuel_cost && (
                         <div className="flex items-center gap-3 p-2 rounded-lg bg-success/5">
                           <DollarSign className="w-4 h-4 text-success flex-shrink-0" />
                           <span className="text-success font-medium">
-                            Total fuel cost: ${trip.fuel_cost.toFixed(2)}
+                            ${trip.fuel_cost.toFixed(2)}
                           </span>
                         </div>
                       )}
-
-                      <div className="flex items-center gap-3 p-2">
-                        <Users className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                        <span className="text-muted-foreground">
-                          {trip.participants.length} passenger(s) joined
-                        </span>
-                      </div>
                     </div>
 
-                    {isJoined ? (
-                      <Badge variant="outline" className="w-full justify-center py-3 border-success text-success">
-                        ✓ You've joined this trip
-                      </Badge>
-                    ) : (
-                      <Button
-                        className="w-full group-hover:scale-[1.02] transition-transform"
-                        onClick={() => handleJoinTrip(trip.id, trip.available_seats)}
-                        disabled={isFull}
-                        variant={isFull ? "secondary" : "default"}
-                      >
-                        {isFull ? "Trip Full" : "Join This Trip"}
-                      </Button>
-                    )}
+                    <Button
+                      className="w-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleJoinTrip(trip.id, trip.available_seats);
+                      }}
+                      disabled={isFull || isJoined}
+                      variant={isJoined ? "outline" : isFull ? "secondary" : "default"}
+                    >
+                      {isJoined ? "✓ Joined" : isFull ? "Trip Full" : "View Details"}
+                    </Button>
                   </CardContent>
                 </Card>
               );
@@ -309,6 +327,7 @@ const Trips = () => {
         )}
       </main>
     </div>
+    </>
   );
 };
 

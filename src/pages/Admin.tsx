@@ -5,10 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Users, Car, Shield, UserPlus, UserMinus } from "lucide-react";
+import { ArrowLeft, Users, Car, Shield, UserPlus, UserMinus, Download, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import campLogo from "@/assets/camp-logo.png";
+import { SearchBar } from "@/components/SearchBar";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { EmptyState } from "@/components/EmptyState";
+import { FilterSelect } from "@/components/FilterSelect";
+import { SkeletonCard } from "@/components/SkeletonCard";
 
 interface Profile {
   id: string;
@@ -46,6 +51,21 @@ const Admin = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Search and filter states
+  const [userSearch, setUserSearch] = useState("");
+  const [tripSearch, setTripSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [userSort, setUserSort] = useState<"name" | "date">("date");
+  const [tripSort, setTripSort] = useState<"date" | "seats">("date");
+  
+  // Confirmation dialog states
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    userId: string;
+    userName: string;
+    action: "add" | "remove";
+  }>({ open: false, userId: "", userName: "", action: "add" });
 
   useEffect(() => {
     checkAdminAndLoadData();
@@ -135,9 +155,10 @@ const Admin = () => {
   };
 
   const toggleAdminRole = async (userId: string, currentlyAdmin: boolean) => {
+    setConfirmDialog({ open: false, userId: "", userName: "", action: "add" });
+    
     try {
       if (currentlyAdmin) {
-        // Remove admin role
         const { error } = await supabase
           .from("user_roles")
           .delete()
@@ -147,7 +168,6 @@ const Admin = () => {
         if (error) throw error;
         toast.success("Admin role removed");
       } else {
-        // Add admin role
         const { error } = await supabase
           .from("user_roles")
           .insert({ user_id: userId, role: "admin" });
@@ -156,7 +176,6 @@ const Admin = () => {
         toast.success("Admin role added");
       }
 
-      // Reload data
       await loadData();
     } catch (error: any) {
       if (import.meta.env.DEV) {
@@ -166,19 +185,104 @@ const Admin = () => {
     }
   };
 
+  const exportUsersToCSV = () => {
+    const headers = ["Name", "Email", "Phone", "Roles", "Joined Date"];
+    const rows = users.map(user => [
+      user.full_name,
+      user.email,
+      user.phone || "N/A",
+      user.roles.join(", ") || "passenger",
+      format(new Date(user.created_at), "PPP")
+    ]);
+    
+    const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `users_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    link.click();
+    toast.success("Users exported successfully");
+  };
+
+  const exportTripsToCSV = () => {
+    const headers = ["Departure", "Arrival", "Driver", "Date", "Seats", "Passengers"];
+    const rows = trips.map(trip => [
+      trip.departure_location,
+      trip.arrival_location,
+      trip.driver.full_name,
+      format(new Date(trip.departure_datetime), "PPP p"),
+      `${trip.available_seats}/${trip.total_seats}`,
+      trip.participants.length
+    ]);
+    
+    const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `trips_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    link.click();
+    toast.success("Trips exported successfully");
+  };
+
+  // Filter and sort users
+  const filteredUsers = users
+    .filter(user => {
+      const matchesSearch = user.full_name.toLowerCase().includes(userSearch.toLowerCase()) ||
+                           user.email.toLowerCase().includes(userSearch.toLowerCase());
+      const matchesRole = roleFilter === "all" || 
+                         (roleFilter === "admin" && user.roles.includes("admin")) ||
+                         (roleFilter === "driver" && user.roles.includes("driver")) ||
+                         (roleFilter === "passenger" && !user.roles.includes("driver") && !user.roles.includes("admin"));
+      return matchesSearch && matchesRole;
+    })
+    .sort((a, b) => {
+      if (userSort === "name") {
+        return a.full_name.localeCompare(b.full_name);
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+
+  // Filter and sort trips
+  const filteredTrips = trips
+    .filter(trip => {
+      return trip.departure_location.toLowerCase().includes(tripSearch.toLowerCase()) ||
+             trip.arrival_location.toLowerCase().includes(tripSearch.toLowerCase()) ||
+             trip.driver.full_name.toLowerCase().includes(tripSearch.toLowerCase());
+    })
+    .sort((a, b) => {
+      if (tripSort === "seats") {
+        return a.available_seats - b.available_seats;
+      }
+      return new Date(b.departure_datetime).getTime() - new Date(a.departure_datetime).getTime();
+    });
+
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center animate-fade-in">
-          <div className="relative">
-            <div className="h-16 w-16 mx-auto mb-6">
-              <div className="absolute inset-0 rounded-full border-4 border-secondary/20"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-secondary border-t-transparent animate-spin"></div>
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-nav/20 bg-nav shadow-md">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img src={campLogo} alt="Camp Sequoia Lake Logo" className="h-10 w-auto" />
+              <div>
+                <h1 className="text-xl font-bold text-nav-foreground">Admin Dashboard</h1>
+                <p className="text-sm text-nav-foreground/80">Loading...</p>
+              </div>
             </div>
           </div>
-          <h3 className="text-lg font-semibold mb-2">Loading admin dashboard...</h3>
-          <p className="text-sm text-muted-foreground">Preparing management tools</p>
-        </div>
+        </header>
+        <main className="container mx-auto px-4 py-8">
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+          <div className="space-y-4">
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        </main>
       </div>
     );
   }
@@ -191,6 +295,20 @@ const Admin = () => {
   const passengers = users.filter((u) => u.roles.includes("passenger") || u.roles.length === 0);
 
   return (
+    <>
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
+        onConfirm={() => toggleAdminRole(confirmDialog.userId, confirmDialog.action === "remove")}
+        title={confirmDialog.action === "add" ? "Add Admin Role?" : "Remove Admin Role?"}
+        description={
+          confirmDialog.action === "add"
+            ? `Are you sure you want to make ${confirmDialog.userName} an administrator? They will have full access to manage users and trips.`
+            : `Are you sure you want to remove admin privileges from ${confirmDialog.userName}? They will no longer be able to access the admin dashboard.`
+        }
+        confirmText={confirmDialog.action === "add" ? "Add Admin" : "Remove Admin"}
+        variant={confirmDialog.action === "remove" ? "destructive" : "default"}
+      />
     <div className="min-h-screen bg-background">
       <header className="border-b border-nav/20 bg-nav shadow-md">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -283,15 +401,55 @@ const Admin = () => {
           <TabsContent value="users" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>All Users</CardTitle>
-                <CardDescription>
-                  {users.length} total users ({drivers.length} drivers, {passengers.length}{" "}
-                  passengers)
-                </CardDescription>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <CardTitle>All Users</CardTitle>
+                    <CardDescription>
+                      {filteredUsers.length} of {users.length} users
+                    </CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={exportUsersToCSV}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Export CSV
+                  </Button>
+                </div>
+                
+                <div className="grid md:grid-cols-3 gap-4">
+                  <SearchBar
+                    value={userSearch}
+                    onChange={setUserSearch}
+                    placeholder="Search by name or email..."
+                  />
+                  <FilterSelect
+                    value={roleFilter}
+                    onChange={setRoleFilter}
+                    options={[
+                      { value: "all", label: "All Roles" },
+                      { value: "admin", label: "Admins" },
+                      { value: "driver", label: "Drivers" },
+                      { value: "passenger", label: "Passengers" }
+                    ]}
+                    placeholder="Filter by role"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => setUserSort(userSort === "name" ? "date" : "name")}
+                  >
+                    <ArrowUpDown className="w-4 h-4 mr-2" />
+                    Sort by {userSort === "name" ? "Date" : "Name"}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {users.map((user) => {
+                {filteredUsers.length === 0 ? (
+                  <EmptyState
+                    icon={Users}
+                    title="No users found"
+                    description="Try adjusting your search or filter criteria"
+                  />
+                ) : (
+                  <div className="space-y-4">
+                    {filteredUsers.map((user) => {
                     const isAdmin = user.roles.includes("admin");
                     return (
                       <div
@@ -327,7 +485,12 @@ const Admin = () => {
                           <Button
                             variant={isAdmin ? "destructive" : "outline"}
                             size="sm"
-                            onClick={() => toggleAdminRole(user.id, isAdmin)}
+                            onClick={() => setConfirmDialog({
+                              open: true,
+                              userId: user.id,
+                              userName: user.full_name,
+                              action: isAdmin ? "remove" : "add"
+                            })}
                           >
                             {isAdmin ? (
                               <>
@@ -343,9 +506,10 @@ const Admin = () => {
                           </Button>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -353,12 +517,43 @@ const Admin = () => {
           <TabsContent value="trips" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>All Trips</CardTitle>
-                <CardDescription>{trips.length} total trips</CardDescription>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <CardTitle>All Trips</CardTitle>
+                    <CardDescription>{filteredTrips.length} of {trips.length} trips</CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={exportTripsToCSV}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Export CSV
+                  </Button>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-4">
+                  <SearchBar
+                    value={tripSearch}
+                    onChange={setTripSearch}
+                    placeholder="Search by location or driver..."
+                  />
+                  <div /> {/* Spacer */}
+                  <Button
+                    variant="outline"
+                    onClick={() => setTripSort(tripSort === "date" ? "seats" : "date")}
+                  >
+                    <ArrowUpDown className="w-4 h-4 mr-2" />
+                    Sort by {tripSort === "date" ? "Seats" : "Date"}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {trips.map((trip) => (
+                {filteredTrips.length === 0 ? (
+                  <EmptyState
+                    icon={Car}
+                    title="No trips found"
+                    description="Try adjusting your search criteria"
+                  />
+                ) : (
+                  <div className="space-y-4">
+                    {filteredTrips.map((trip) => (
                     <div key={trip.id} className="p-4 border rounded-lg space-y-2">
                       <div className="flex items-start justify-between">
                         <div>
@@ -385,12 +580,14 @@ const Admin = () => {
                     </div>
                   ))}
                 </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </main>
     </div>
+    </>
   );
 };
 

@@ -22,6 +22,11 @@ const Dashboard = () => {
   const [isDriver, setIsDriver] = useState(false);
   const [hasVerifiedDocuments, setHasVerifiedDocuments] = useState(false);
   const [hasAcknowledgedLiability, setHasAcknowledgedLiability] = useState(false);
+  const [stats, setStats] = useState({
+    upcomingTrips: 0,
+    myTrips: 0,
+    availableRides: 0
+  });
 
   useEffect(() => {
     loadProfile();
@@ -76,6 +81,9 @@ const Dashboard = () => {
         .maybeSingle();
 
       setHasAcknowledgedLiability(!!liability);
+      
+      // Load stats
+      await loadStats(session.user.id, roles.includes("driver"));
     } catch (error: any) {
       if (import.meta.env.DEV) {
         console.error("Error loading profile:", error);
@@ -83,6 +91,47 @@ const Dashboard = () => {
       toast.error("Failed to load profile");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadStats = async (userId: string, isDriver: boolean) => {
+    try {
+      // Count upcoming trips (all trips)
+      const { count: upcomingCount } = await supabase
+        .from("trips")
+        .select("*", { count: "exact", head: true })
+        .gte("departure_datetime", new Date().toISOString());
+
+      // Count available rides with seats
+      const { count: availableCount } = await supabase
+        .from("trips")
+        .select("*", { count: "exact", head: true })
+        .gte("departure_datetime", new Date().toISOString())
+        .gt("available_seats", 0);
+
+      // Count user's trips (either as driver or passenger)
+      let myTripsCount = 0;
+      if (isDriver) {
+        const { count } = await supabase
+          .from("trips")
+          .select("*", { count: "exact", head: true })
+          .eq("driver_id", userId)
+          .gte("departure_datetime", new Date().toISOString());
+        myTripsCount = count || 0;
+      }
+      
+      const { count: passengerCount } = await supabase
+        .from("trip_participants")
+        .select("trip_id", { count: "exact", head: true })
+        .eq("passenger_id", userId);
+
+      setStats({
+        upcomingTrips: upcomingCount || 0,
+        myTrips: myTripsCount + (passengerCount || 0),
+        availableRides: availableCount || 0
+      });
+    } catch (error) {
+      console.error("Error loading stats:", error);
     }
   };
 
@@ -176,6 +225,41 @@ const Dashboard = () => {
               </Badge>
             )}
           </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid md:grid-cols-3 gap-4 mb-8 animate-fade-in">
+          <Card className="border-2 hover:border-primary/50 hover:shadow-lg transition-all">
+            <CardHeader className="pb-3">
+              <CardDescription>Available Rides</CardDescription>
+              <CardTitle className="text-3xl">{stats.availableRides}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Carpools with open seats</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-2 hover:border-accent/50 hover:shadow-lg transition-all">
+            <CardHeader className="pb-3">
+              <CardDescription>My Trips</CardDescription>
+              <CardTitle className="text-3xl">{stats.myTrips}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                {isDriver ? "Driving or joined" : "Trips you've joined"}
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-2 hover:border-success/50 hover:shadow-lg transition-all">
+            <CardHeader className="pb-3">
+              <CardDescription>Total Upcoming</CardDescription>
+              <CardTitle className="text-3xl">{stats.upcomingTrips}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">All scheduled carpools</p>
+            </CardContent>
+          </Card>
         </div>
 
         {!hasAcknowledgedLiability && (
