@@ -1,9 +1,10 @@
 /// <reference types="google.maps" />
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -43,38 +44,35 @@ const CreateTrip = () => {
   console.log('CreateTrip component mounted, mapsLoaded:', mapsLoaded);
 
   // Load Google Maps API
-  useEffect(() => {
-    const loadMaps = async () => {
-      try {
-        console.log('Attempting to load Google Maps...');
-        const { data, error } = await supabase.functions.invoke('get-google-maps-key');
-        
-        console.log('Edge function response:', { data, error });
-        
-        if (error) {
-          console.error('Edge function error:', error);
-          toast.error("Failed to load maps configuration");
-          return;
-        }
-        
-        if (data?.apiKey) {
-          console.log('Loading Google Maps script...');
-          await loadGoogleMapsScript(data.apiKey);
-          console.log('Google Maps loaded successfully');
-          setMapsLoaded(true);
-          toast.success("Google Maps loaded");
-        } else {
-          console.error('No API key in response:', data);
-          toast.error("Google Maps API key not configured");
-        }
-      } catch (error) {
-        console.error("Failed to load Google Maps:", error);
-        toast.error("Failed to load maps. Using basic location input.");
+  const loadMaps = useCallback(async () => {
+    try {
+      console.log('Attempting to load Google Maps...');
+      const { data, error } = await supabase.functions.invoke('get-google-maps-key');
+      console.log('Edge function response:', { data, error });
+      if (error) {
+        console.error('Edge function error:', error);
+        toast.error("Failed to load maps configuration");
+        return;
       }
-    };
-
-    loadMaps();
+      if (data?.apiKey) {
+        console.log('Loading Google Maps script...');
+        await loadGoogleMapsScript(data.apiKey);
+        console.log('Google Maps loaded successfully');
+        setMapsLoaded(true);
+        toast.success("Google Maps loaded");
+      } else {
+        console.error('No API key in response:', data);
+        toast.error("Google Maps API key not configured");
+      }
+    } catch (error) {
+      console.error("Failed to load Google Maps:", error);
+      toast.error("Failed to load maps. Using basic location input.");
+    }
   }, []);
+
+  useEffect(() => {
+    loadMaps();
+  }, [loadMaps]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,6 +203,16 @@ const CreateTrip = () => {
                 </>
               ) : (
                 <>
+                  <Alert>
+                    <AlertTitle>Google Maps not active</AlertTitle>
+                    <AlertDescription>
+                      Autocomplete and map will appear once Google Maps loads.
+                      <Button type="button" size="sm" variant="outline" className="ml-2" onClick={loadMaps}>
+                        Retry loading Maps
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+
                   <div className="space-y-2">
                     <Label htmlFor="departure" className="text-base font-medium">Departure Location *</Label>
                     <Input
@@ -213,6 +221,7 @@ const CreateTrip = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, departure_location: e.target.value })
                       }
+                      onFocus={() => { if (!mapsLoaded) loadMaps(); }}
                       placeholder="e.g., Los Angeles, CA"
                       required
                       className="h-11"
@@ -227,6 +236,7 @@ const CreateTrip = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, arrival_location: e.target.value })
                       }
+                      onFocus={() => { if (!mapsLoaded) loadMaps(); }}
                       placeholder="e.g., Camp Sequoia Lake"
                       required
                       className="h-11"
