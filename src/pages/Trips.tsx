@@ -4,10 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Car } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Car, ExternalLink, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import campLogo from "@/assets/camp-logo.png";
+import { getGoogleMapsUrl, getGoogleMapsDirectionsUrl, copyToClipboard } from "@/lib/maps";
 
 interface Trip {
   id: string;
@@ -215,8 +216,55 @@ const Trips = () => {
                         </span>
                       </div>
 
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <a
+                            href={getGoogleMapsUrl(trip.departure_location)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 p-2 rounded-lg hover:bg-accent/10 transition-colors flex-1 group/link"
+                          >
+                            <MapPin className="w-4 h-4 text-accent flex-shrink-0" />
+                            <span className="text-muted-foreground group-hover/link:text-accent transition-colors">
+                              From: {trip.departure_location}
+                            </span>
+                            <ExternalLink className="w-3 h-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                          </a>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <a
+                            href={getGoogleMapsUrl(trip.arrival_location)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 p-2 rounded-lg hover:bg-success/10 transition-colors flex-1 group/link"
+                          >
+                            <MapPin className="w-4 h-4 text-success flex-shrink-0" />
+                            <span className="text-muted-foreground group-hover/link:text-success transition-colors">
+                              To: {trip.arrival_location}
+                            </span>
+                            <ExternalLink className="w-3 h-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                          </a>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={async () => {
+                            const directionsUrl = getGoogleMapsDirectionsUrl(
+                              trip.departure_location,
+                              trip.arrival_location
+                            );
+                            await copyToClipboard(directionsUrl);
+                            toast.success("Directions link copied to clipboard!");
+                          }}
+                        >
+                          <Share2 className="w-3 h-3 mr-2" />
+                          Share Directions
+                        </Button>
+                      </div>
+
                       {trip.route_description && (
-                        <div className="flex items-start gap-3 p-2">
+                        <div className="flex items-start gap-3 p-2 border-t pt-3">
                           <MapPin className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
                           <span className="text-muted-foreground">{trip.route_description}</span>
                         </div>
