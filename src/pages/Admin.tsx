@@ -192,19 +192,23 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
+      <header className="border-b border-nav/20 bg-nav shadow-md">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <img 
               src={campLogo} 
               alt="Camp Sequoia Lake Logo" 
               className="h-10 w-auto"
             />
-            <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
+            <div>
+              <h1 className="text-xl font-bold text-nav-foreground">Admin Dashboard</h1>
+              <p className="text-sm text-nav-foreground/80">Manage all carpools</p>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="text-nav-foreground hover:bg-nav-foreground/10">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard
             </Button>
-          </div>
         </div>
       </header>
 
