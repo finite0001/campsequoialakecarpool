@@ -58,6 +58,10 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 150 30% 20%;
     --sidebar-border: 150 15% 88%;
     --sidebar-ring: 152 45% 35%;
+
+    /* Navigation bar - Camp green theme */
+    --nav-background: 152 50% 30%;
+    --nav-foreground: 0 0% 98%;
   }
 
   .dark {
@@ -103,6 +107,10 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 45 20% 90%;
     --sidebar-border: 150 15% 18%;
     --sidebar-ring: 152 50% 50%;
+
+    /* Navigation bar - Camp green theme for dark mode */
+    --nav-background: 152 45% 25%;
+    --nav-foreground: 0 0% 98%;
   }
 }
 

@@ -134,7 +134,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
+      <header className="border-b border-nav/20 bg-nav shadow-md">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
@@ -143,11 +143,11 @@ const Dashboard = () => {
               className="h-10 w-auto"
             />
             <div>
-              <h1 className="text-xl font-bold">Camp Sequoia Lake</h1>
-              <p className="text-sm text-muted-foreground">Carpool Coordinator</p>
+              <h1 className="text-xl font-bold text-nav-foreground">Camp Sequoia Lake</h1>
+              <p className="text-sm text-nav-foreground/80">Carpool Coordinator</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleSignOut}>
+          <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-nav-foreground hover:bg-nav-foreground/10">
             <LogOut className="w-4 h-4 mr-2" />
             Sign Out
           </Button>
