@@ -40,6 +40,8 @@ const CreateTrip = () => {
     fuel_cost: "",
   });
 
+  console.log('CreateTrip component mounted, mapsLoaded:', mapsLoaded);
+
   // Load Google Maps API
   useEffect(() => {
     const loadMaps = async () => {
