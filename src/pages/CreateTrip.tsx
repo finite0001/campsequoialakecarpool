@@ -44,18 +44,30 @@ const CreateTrip = () => {
   useEffect(() => {
     const loadMaps = async () => {
       try {
+        console.log('Attempting to load Google Maps...');
         const { data, error } = await supabase.functions.invoke('get-google-maps-key');
-        if (error) throw error;
+        
+        console.log('Edge function response:', { data, error });
+        
+        if (error) {
+          console.error('Edge function error:', error);
+          toast.error("Failed to load maps configuration");
+          return;
+        }
         
         if (data?.apiKey) {
+          console.log('Loading Google Maps script...');
           await loadGoogleMapsScript(data.apiKey);
+          console.log('Google Maps loaded successfully');
           setMapsLoaded(true);
+          toast.success("Google Maps loaded");
         } else {
-          toast.error("Google Maps configuration missing");
+          console.error('No API key in response:', data);
+          toast.error("Google Maps API key not configured");
         }
       } catch (error) {
         console.error("Failed to load Google Maps:", error);
-        toast.error("Failed to load maps. Location features may be limited.");
+        toast.error("Failed to load maps. Using basic location input.");
       }
     };
 
