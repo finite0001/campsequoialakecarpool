@@ -32,6 +32,9 @@ const CreateTrip = () => {
   const [mapsLoaded, setMapsLoaded] = useState(false);
   const [departurePlace, setDeparturePlace] = useState<google.maps.places.PlaceResult>();
   const [arrivalPlace, setArrivalPlace] = useState<google.maps.places.PlaceResult>();
+  const [tripDistance, setTripDistance] = useState<string>("");
+  const [tripDuration, setTripDuration] = useState<string>("");
+  const [calculatingRoute, setCalculatingRoute] = useState(false);
   const [formData, setFormData] = useState({
     departure_location: "",
     arrival_location: "Camp Sequoia Lake",
@@ -73,6 +76,47 @@ const CreateTrip = () => {
   useEffect(() => {
     loadMaps();
   }, [loadMaps]);
+
+  // Calculate distance and duration when both locations are selected
+  useEffect(() => {
+    const calculateRoute = async () => {
+      if (!departurePlace?.geometry?.location || !arrivalPlace?.geometry?.location || !mapsLoaded) {
+        setTripDistance("");
+        setTripDuration("");
+        return;
+      }
+
+      setCalculatingRoute(true);
+      try {
+        const service = new google.maps.DistanceMatrixService();
+        const result = await service.getDistanceMatrix({
+          origins: [departurePlace.geometry.location],
+          destinations: [arrivalPlace.geometry.location],
+          travelMode: google.maps.TravelMode.DRIVING,
+          unitSystem: google.maps.UnitSystem.IMPERIAL,
+        });
+
+        if (result.rows[0]?.elements[0]?.status === "OK") {
+          const element = result.rows[0].elements[0];
+          setTripDistance(element.distance?.text || "");
+          setTripDuration(element.duration?.text || "");
+          console.log('Route calculated:', element);
+        } else {
+          console.error('Distance calculation failed:', result.rows[0]?.elements[0]?.status);
+          setTripDistance("");
+          setTripDuration("");
+        }
+      } catch (error) {
+        console.error("Error calculating distance:", error);
+        setTripDistance("");
+        setTripDuration("");
+      } finally {
+        setCalculatingRoute(false);
+      }
+    };
+
+    calculateRoute();
+  }, [departurePlace, arrivalPlace, mapsLoaded]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,6 +239,34 @@ const CreateTrip = () => {
                     placeholder="e.g., Camp Sequoia Lake"
                     required
                   />
+
+                  {(tripDistance || tripDuration || calculatingRoute) && (
+                    <Card className="bg-primary/5 border-primary/20">
+                      <CardContent className="pt-6">
+                        {calculatingRoute ? (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            <span className="text-sm">Calculating route...</span>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-4">
+                            {tripDistance && (
+                              <div>
+                                <p className="text-sm text-muted-foreground mb-1">Distance</p>
+                                <p className="text-2xl font-bold text-primary">{tripDistance}</p>
+                              </div>
+                            )}
+                            {tripDuration && (
+                              <div>
+                                <p className="text-sm text-muted-foreground mb-1">Travel Time</p>
+                                <p className="text-2xl font-bold text-accent">{tripDuration}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
 
                   <TripRouteMap
                     departureLocation={departurePlace}
