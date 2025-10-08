@@ -344,7 +344,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {isDriver && hasVerifiedDocuments && (
+          {(isAdmin || (isDriver && hasVerifiedDocuments)) && (
             <Card 
               className="group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer border-2 hover:border-success/50 animate-fade-up" 
               style={{ animationDelay: "0.1s" }}
