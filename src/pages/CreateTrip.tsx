@@ -120,6 +120,20 @@ const CreateTrip = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Calculate distance data if not already calculated
+    let distanceData: any = {};
+    if (tripDistance && tripDuration) {
+      const distanceMiles = parseFloat(tripDistance.replace(/[^0-9.]/g, ''));
+      const durationMinutes = parseInt(tripDuration.replace(/[^0-9]/g, ''));
+      
+      distanceData = {
+        distance_text: tripDistance,
+        duration_text: tripDuration,
+        distance_miles: distanceMiles || null,
+        duration_minutes: durationMinutes || null,
+      };
+    }
 
     // Prepare data for validation
     const tripData = {
@@ -161,6 +175,7 @@ const CreateTrip = () => {
         total_seats: validatedData.total_seats,
         available_seats: validatedData.total_seats,
         fuel_cost: validatedData.fuel_cost || null,
+        ...distanceData,
       });
 
       if (error) {

@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      broadcast_messages: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string
+          sender_id: string | null
+          sent_at: string | null
+          target_audience: string | null
+          title: string
+          trip_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message: string
+          sender_id?: string | null
+          sent_at?: string | null
+          target_audience?: string | null
+          title: string
+          trip_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string
+          sender_id?: string | null
+          sent_at?: string | null
+          target_audience?: string | null
+          title?: string
+          trip_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broadcast_messages_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_documents: {
         Row: {
           driver_id: string
@@ -75,10 +116,42 @@ export type Database = {
           },
         ]
       }
+      message_recipients: {
+        Row: {
+          id: string
+          message_id: string
+          read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_recipients_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "broadcast_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
           email: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
           full_name: string
           id: string
           phone: string | null
@@ -87,6 +160,9 @@ export type Database = {
         Insert: {
           created_at?: string
           email: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
           full_name: string
           id: string
           phone?: string | null
@@ -95,12 +171,50 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
           full_name?: string
           id?: string
           phone?: string | null
           updated_at?: string
         }
         Relationships: []
+      }
+      trip_checkins: {
+        Row: {
+          checked_in_at: string | null
+          checked_in_by: string | null
+          id: string
+          status: string
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          checked_in_at?: string | null
+          checked_in_by?: string | null
+          id?: string
+          status?: string
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          checked_in_at?: string | null
+          checked_in_by?: string | null
+          id?: string
+          status?: string
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_checkins_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trip_participants: {
         Row: {
@@ -138,43 +252,102 @@ export type Database = {
           },
         ]
       }
+      trip_reminders: {
+        Row: {
+          created_at: string | null
+          id: string
+          reminder_type: string
+          scheduled_for: string
+          sent: boolean | null
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          reminder_type: string
+          scheduled_for: string
+          sent?: boolean | null
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          reminder_type?: string
+          scheduled_for?: string
+          sent?: boolean | null
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_reminders_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trips: {
         Row: {
           arrival_location: string
           available_seats: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
           created_at: string
           departure_datetime: string
           departure_location: string
+          distance_miles: number | null
+          distance_text: string | null
           driver_id: string
+          duration_minutes: number | null
+          duration_text: string | null
           fuel_cost: number | null
           id: string
           route_description: string | null
+          status: Database["public"]["Enums"]["trip_status"] | null
           total_seats: number
           updated_at: string
         }
         Insert: {
           arrival_location: string
           available_seats: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
           created_at?: string
           departure_datetime: string
           departure_location: string
+          distance_miles?: number | null
+          distance_text?: string | null
           driver_id: string
+          duration_minutes?: number | null
+          duration_text?: string | null
           fuel_cost?: number | null
           id?: string
           route_description?: string | null
+          status?: Database["public"]["Enums"]["trip_status"] | null
           total_seats: number
           updated_at?: string
         }
         Update: {
           arrival_location?: string
           available_seats?: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
           created_at?: string
           departure_datetime?: string
           departure_location?: string
+          distance_miles?: number | null
+          distance_text?: string | null
           driver_id?: string
+          duration_minutes?: number | null
+          duration_text?: string | null
           fuel_cost?: number | null
           id?: string
           route_description?: string | null
+          status?: Database["public"]["Enums"]["trip_status"] | null
           total_seats?: number
           updated_at?: string
         }
@@ -233,13 +406,11 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "driver" | "passenger"
+      trip_status: "upcoming" | "in_progress" | "completed" | "cancelled"
       verification_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
@@ -369,6 +540,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "driver", "passenger"],
+      trip_status: ["upcoming", "in_progress", "completed", "cancelled"],
       verification_status: ["pending", "approved", "rejected"],
     },
   },
