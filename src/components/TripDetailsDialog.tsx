@@ -5,6 +5,7 @@ import { Calendar, MapPin, Users, DollarSign, Car, ExternalLink, Share2 } from "
 import { format } from "date-fns";
 import { getGoogleMapsUrl, getGoogleMapsDirectionsUrl, copyToClipboard } from "@/lib/maps";
 import { toast } from "sonner";
+import { TripStatusBadge } from "@/components/TripStatusBadge";
 
 interface TripDetailsDialogProps {
   trip: {
@@ -16,6 +17,7 @@ interface TripDetailsDialogProps {
     total_seats: number;
     available_seats: number;
     fuel_cost: number | null;
+    status?: string;
     driver: {
       full_name: string;
       email: string;
@@ -41,16 +43,24 @@ export const TripDetailsDialog = ({
   if (!trip) return null;
 
   const isFull = trip.available_seats === 0;
+  const confirmedPassengers = trip.total_seats - trip.available_seats;
+  const perPersonCost = trip.fuel_cost ? trip.fuel_cost / (confirmedPassengers + 1) : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl flex items-center justify-between">
+          <DialogTitle className="text-2xl flex items-center justify-between gap-2">
             <span>Trip Details</span>
-            <Badge variant={isFull ? "secondary" : "default"}>
-              {trip.available_seats}/{trip.total_seats} seats
-            </Badge>
+            <div className="flex items-center gap-2">
+              <TripStatusBadge 
+                departureDateTime={trip.departure_datetime}
+                status={trip.status}
+              />
+              <Badge variant={isFull ? "secondary" : "default"}>
+                {trip.available_seats}/{trip.total_seats} seats
+              </Badge>
+            </div>
           </DialogTitle>
           <DialogDescription>
             Review trip information before joining
@@ -138,14 +148,16 @@ export const TripDetailsDialog = ({
           </div>
 
           {trip.fuel_cost && (
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-success/5">
-              <DollarSign className="w-5 h-5 text-success flex-shrink-0" />
-              <div>
-                <p className="font-medium">Total Fuel Cost</p>
-                <p className="text-success text-lg">${trip.fuel_cost.toFixed(2)}</p>
-                <p className="text-sm text-muted-foreground">
-                  Cost per passenger: ${(trip.fuel_cost / (trip.total_seats - trip.available_seats + 1)).toFixed(2)}
-                </p>
+            <div className="p-4 rounded-lg bg-success/5 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-success flex-shrink-0" />
+                  <p className="font-medium">Your Share</p>
+                </div>
+                <p className="text-success text-2xl font-bold">${perPersonCost.toFixed(2)}</p>
+              </div>
+              <div className="text-sm text-muted-foreground border-t pt-2">
+                Total fuel cost: ${trip.fuel_cost.toFixed(2)} ÷ {confirmedPassengers + 1} people (driver + passengers)
               </div>
             </div>
           )}

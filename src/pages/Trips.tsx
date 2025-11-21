@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { TripDetailsDialog } from "@/components/TripDetailsDialog";
 import { SkeletonTripCard } from "@/components/SkeletonCard";
 import { FilterSelect } from "@/components/FilterSelect";
+import { TripStatusBadge } from "@/components/TripStatusBadge";
 
 interface Trip {
   id: string;
@@ -24,6 +25,9 @@ interface Trip {
   total_seats: number;
   available_seats: number;
   fuel_cost: number | null;
+  status?: string;
+  distance_text?: string;
+  duration_text?: string;
   driver: {
     full_name: string;
     email: string;
@@ -245,6 +249,9 @@ const Trips = () => {
               );
               const isFull = trip.available_seats === 0;
 
+              const confirmedPassengers = trip.total_seats - trip.available_seats;
+              const perPersonCost = trip.fuel_cost ? trip.fuel_cost / (confirmedPassengers + 1) : 0;
+
               return (
                 <Card 
                   key={trip.id} 
@@ -260,9 +267,15 @@ const Trips = () => {
                   <CardHeader>
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <CardTitle className="text-xl mb-2 group-hover:text-primary transition-colors">
-                          {trip.departure_location} → {trip.arrival_location}
-                        </CardTitle>
+                        <div className="flex items-center gap-2 mb-2">
+                          <CardTitle className="text-xl group-hover:text-primary transition-colors">
+                            {trip.departure_location} → {trip.arrival_location}
+                          </CardTitle>
+                          <TripStatusBadge 
+                            departureDateTime={trip.departure_datetime}
+                            status={trip.status}
+                          />
+                        </div>
                         <CardDescription className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-success rounded-full"></div>
                           Driven by {trip.driver.full_name}
@@ -299,11 +312,19 @@ const Trips = () => {
                       </div>
 
                       {trip.fuel_cost && (
-                        <div className="flex items-center gap-3 p-2 rounded-lg bg-success/5">
-                          <DollarSign className="w-4 h-4 text-success flex-shrink-0" />
-                          <span className="text-success font-medium">
-                            ${trip.fuel_cost.toFixed(2)}
-                          </span>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between p-2 rounded-lg bg-success/5">
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="w-4 h-4 text-success flex-shrink-0" />
+                              <span className="text-sm text-muted-foreground">Your share:</span>
+                            </div>
+                            <span className="text-success font-bold text-lg">
+                              ${perPersonCost.toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground text-right px-2">
+                            Total: ${trip.fuel_cost.toFixed(2)}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -312,9 +333,9 @@ const Trips = () => {
                       className="w-full"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleJoinTrip(trip.id, trip.available_seats);
+                        setSelectedTrip(trip);
+                        setDetailsDialogOpen(true);
                       }}
-                      disabled={isFull || isJoined}
                       variant={isJoined ? "outline" : isFull ? "secondary" : "default"}
                     >
                       {isJoined ? "✓ Joined" : isFull ? "Trip Full" : "View Details"}

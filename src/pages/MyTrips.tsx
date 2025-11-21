@@ -4,11 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Trash2, ExternalLink, Share2 } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Trash2, ExternalLink, Share2, Phone, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import campLogo from "@/assets/camp-logo.png";
 import { getGoogleMapsUrl, getGoogleMapsDirectionsUrl, copyToClipboard } from "@/lib/maps";
+import { TripStatusBadge } from "@/components/TripStatusBadge";
 
 interface Trip {
   id: string;
@@ -19,9 +20,14 @@ interface Trip {
   total_seats: number;
   available_seats: number;
   fuel_cost: number | null;
+  status?: string;
+  distance_text?: string;
+  duration_text?: string;
   driver_id: string;
   driver: {
     full_name: string;
+    email: string;
+    phone?: string;
   };
   participants: Array<{
     id: string;
@@ -29,6 +35,7 @@ interface Trip {
     passenger: {
       full_name: string;
       email: string;
+      phone?: string;
     };
   }>;
 }
@@ -73,11 +80,11 @@ const MyTrips = () => {
           .from("trips")
           .select(`
             *,
-            driver:profiles!trips_driver_id_fkey(full_name),
+            driver:profiles!trips_driver_id_fkey(full_name, email, phone),
             participants:trip_participants(
               id,
               passenger_id,
-              passenger:profiles!trip_participants_passenger_id_fkey(full_name, email)
+              passenger:profiles!trip_participants_passenger_id_fkey(full_name, email, phone)
             )
           `)
           .eq("driver_id", session.user.id)
@@ -92,11 +99,11 @@ const MyTrips = () => {
           .select(`
             trip:trips(
               *,
-              driver:profiles!trips_driver_id_fkey(full_name),
+              driver:profiles!trips_driver_id_fkey(full_name, email, phone),
               participants:trip_participants(
                 id,
                 passenger_id,
-                passenger:profiles!trip_participants_passenger_id_fkey(full_name, email)
+                passenger:profiles!trip_participants_passenger_id_fkey(full_name, email, phone)
               )
             )
           `)
@@ -223,6 +230,8 @@ const MyTrips = () => {
               const myParticipation = trip.participants.find(
                 (p) => p.passenger_id === currentUserId
               );
+              const confirmedPassengers = trip.total_seats - trip.available_seats;
+              const perPersonCost = trip.fuel_cost ? trip.fuel_cost / (confirmedPassengers + 1) : 0;
 
               return (
                 <Card 
@@ -233,9 +242,15 @@ const MyTrips = () => {
                   <CardHeader>
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <CardTitle className="text-xl mb-2">
-                          {trip.departure_location} → {trip.arrival_location}
-                        </CardTitle>
+                        <div className="flex items-center gap-2 mb-2">
+                          <CardTitle className="text-xl">
+                            {trip.departure_location} → {trip.arrival_location}
+                          </CardTitle>
+                          <TripStatusBadge 
+                            departureDateTime={trip.departure_datetime}
+                            status={trip.status}
+                          />
+                        </div>
                         <CardDescription className="flex items-center gap-2">
                           {isDriver ? (
                             <>
@@ -319,16 +334,52 @@ const MyTrips = () => {
                       )}
 
                       {trip.fuel_cost && (
-                        <div className="flex items-center gap-3 p-2 rounded-lg bg-success/5">
-                          <DollarSign className="w-4 h-4 text-success flex-shrink-0" />
-                          <span className="text-success font-medium">
-                            Total fuel cost: ${trip.fuel_cost.toFixed(2)}
-                          </span>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between p-3 rounded-lg bg-success/5">
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="w-4 h-4 text-success flex-shrink-0" />
+                              <span className="text-sm font-medium">Your share:</span>
+                            </div>
+                            <span className="text-success font-bold text-xl">
+                              ${perPersonCost.toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground text-right px-2">
+                            Total cost: ${trip.fuel_cost.toFixed(2)} ÷ {confirmedPassengers + 1} people
+                          </div>
                         </div>
                       )}
                     </div>
 
-                    {trip.participants.length > 0 && (
+                    {!isDriver && (
+                      <div className="border-t pt-4">
+                        <h4 className="font-medium mb-3 flex items-center gap-2">
+                          <Users className="w-4 h-4 text-primary" />
+                          Driver Contact
+                        </h4>
+                        <div className="space-y-2 p-3 rounded-lg bg-muted/50">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{trip.driver.full_name}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Mail className="w-3 h-3" />
+                            <a href={`mailto:${trip.driver.email}`} className="hover:text-primary">
+                              {trip.driver.email}
+                            </a>
+                          </div>
+                          {trip.driver.phone && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Phone className="w-3 h-3" />
+                              <a href={`tel:${trip.driver.phone}`} className="hover:text-primary">
+                                {trip.driver.phone}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {trip.participants.length > 0 && isDriver && (
                       <div className="border-t pt-4">
                         <h4 className="font-medium mb-3 flex items-center gap-2">
                           <Users className="w-4 h-4 text-primary" />
@@ -338,12 +389,23 @@ const MyTrips = () => {
                           {trip.participants.map((participant) => (
                             <div
                               key={participant.id}
-                              className="text-sm flex items-center justify-between p-2 rounded-lg bg-muted/50"
+                              className="text-sm p-3 rounded-lg bg-muted/50"
                             >
-                              <div>
-                                <span className="font-medium">{participant.passenger.full_name}</span>
-                                <span className="text-muted-foreground ml-2">({participant.passenger.email})</span>
+                              <div className="font-medium mb-1">{participant.passenger.full_name}</div>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Mail className="w-3 h-3" />
+                                <a href={`mailto:${participant.passenger.email}`} className="hover:text-primary">
+                                  {participant.passenger.email}
+                                </a>
                               </div>
+                              {participant.passenger.phone && (
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                  <Phone className="w-3 h-3" />
+                                  <a href={`tel:${participant.passenger.phone}`} className="hover:text-primary">
+                                    {participant.passenger.phone}
+                                  </a>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
