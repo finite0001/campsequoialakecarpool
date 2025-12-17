@@ -2,19 +2,16 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Car, ExternalLink, Share2, Filter } from "lucide-react";
+import { ArrowLeft, Car, Filter } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import campLogo from "@/assets/camp-logo.png";
-import { getGoogleMapsUrl, getGoogleMapsDirectionsUrl, copyToClipboard } from "@/lib/maps";
 import { SearchBar } from "@/components/SearchBar";
 import { EmptyState } from "@/components/EmptyState";
 import { TripDetailsDialog } from "@/components/TripDetailsDialog";
 import { SkeletonTripCard } from "@/components/SkeletonCard";
 import { FilterSelect } from "@/components/FilterSelect";
-import { TripStatusBadge } from "@/components/TripStatusBadge";
+import { TripCard } from "@/components/TripCard";
+import { MobileNavigation } from "@/components/MobileNavigation";
 
 interface Trip {
   id: string;
@@ -180,29 +177,29 @@ const Trips = () => {
       />
     <div className="min-h-screen bg-background">
       <header className="border-b border-nav/20 bg-nav shadow-md">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="container mx-auto px-4 py-3 md:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 md:gap-3">
             <img 
               src={campLogo} 
               alt="Camp Sequoia Lake Logo" 
-              className="h-10 w-auto"
+              className="h-8 md:h-10 w-auto"
             />
             <div>
-              <h1 className="text-xl font-bold text-nav-foreground">Browse Trips</h1>
-              <p className="text-sm text-nav-foreground/80">Find your carpool</p>
+              <h1 className="text-lg md:text-xl font-bold text-nav-foreground">Browse Trips</h1>
+              <p className="text-xs md:text-sm text-nav-foreground/80 hidden sm:block">Find your carpool</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="text-nav-foreground hover:bg-nav-foreground/10">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
-            </Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="text-nav-foreground hover:bg-nav-foreground/10 hidden md:flex">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">Available Trips</h1>
-          <p className="text-muted-foreground">Browse and join upcoming carpools to Camp Sequoia Lake</p>
+      <main className="container mx-auto px-4 py-4 md:py-8 pb-mobile-nav">
+        <div className="mb-4 md:mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">Available Trips</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Browse and join upcoming carpools</p>
         </div>
 
         <div className="mb-6 space-y-4">
@@ -242,111 +239,24 @@ const Trips = () => {
             onAction={() => navigate("/dashboard")}
           />
         ) : (
-          <div className="grid md:grid-cols-2 gap-6">
-            {filteredTrips.map((trip, index) => {
-              const isJoined = trip.participants.some(
-                (p) => p.passenger_id === currentUserId
-              );
-              const isFull = trip.available_seats === 0;
-
-              const confirmedPassengers = trip.total_seats - trip.available_seats;
-              const perPersonCost = trip.fuel_cost ? trip.fuel_cost / (confirmedPassengers + 1) : 0;
-
-              return (
-                <Card 
-                  key={trip.id} 
-                  className={`group hover:shadow-xl transition-all duration-300 animate-fade-up cursor-pointer ${
-                    isFull ? "opacity-75" : "hover:scale-[1.02] border-2 hover:border-primary/30"
-                  }`}
-                  style={{ animationDelay: `${index * 0.05}s` }}
-                  onClick={() => {
-                    setSelectedTrip(trip);
-                    setDetailsDialogOpen(true);
-                  }}
-                >
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                            {trip.departure_location} → {trip.arrival_location}
-                          </CardTitle>
-                          <TripStatusBadge 
-                            departureDateTime={trip.departure_datetime}
-                            status={trip.status}
-                          />
-                        </div>
-                        <CardDescription className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-success rounded-full"></div>
-                          Driven by {trip.driver.full_name}
-                        </CardDescription>
-                      </div>
-                      <Badge 
-                        variant={isFull ? "secondary" : "default"}
-                        className="flex-shrink-0"
-                      >
-                        {trip.available_seats}/{trip.total_seats} seats
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-3 text-sm">
-                      <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                        <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
-                        <span className="font-medium">
-                          {format(new Date(trip.departure_datetime), "PPP 'at' p")}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 p-2">
-                        <MapPin className="w-4 h-4 text-accent flex-shrink-0" />
-                        <span className="text-muted-foreground truncate">
-                          {trip.departure_location}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 p-2">
-                        <MapPin className="w-4 h-4 text-success flex-shrink-0" />
-                        <span className="text-muted-foreground truncate">
-                          {trip.arrival_location}
-                        </span>
-                      </div>
-
-                      {trip.fuel_cost && (
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between p-2 rounded-lg bg-success/5">
-                            <div className="flex items-center gap-2">
-                              <DollarSign className="w-4 h-4 text-success flex-shrink-0" />
-                              <span className="text-sm text-muted-foreground">Your share:</span>
-                            </div>
-                            <span className="text-success font-bold text-lg">
-                              ${perPersonCost.toFixed(2)}
-                            </span>
-                          </div>
-                          <div className="text-xs text-muted-foreground text-right px-2">
-                            Total: ${trip.fuel_cost.toFixed(2)}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <Button
-                      className="w-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedTrip(trip);
-                        setDetailsDialogOpen(true);
-                      }}
-                      variant={isJoined ? "outline" : isFull ? "secondary" : "default"}
-                    >
-                      {isJoined ? "✓ Joined" : isFull ? "Trip Full" : "View Details"}
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })}
+          <div className="grid md:grid-cols-2 gap-4 md:gap-6">
+            {filteredTrips.map((trip, index) => (
+              <TripCard
+                key={trip.id}
+                trip={trip}
+                currentUserId={currentUserId}
+                onClick={() => {
+                  setSelectedTrip(trip);
+                  setDetailsDialogOpen(true);
+                }}
+                animationDelay={index * 0.05}
+              />
+            ))}
           </div>
         )}
       </main>
+
+      <MobileNavigation />
     </div>
     </>
   );

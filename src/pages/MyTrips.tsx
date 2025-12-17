@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import campLogo from "@/assets/camp-logo.png";
 import { getGoogleMapsUrl, getGoogleMapsDirectionsUrl, copyToClipboard } from "@/lib/maps";
 import { TripStatusBadge } from "@/components/TripStatusBadge";
+import { MobileNavigation } from "@/components/MobileNavigation";
 
 interface Trip {
   id: string;
@@ -173,29 +174,29 @@ const MyTrips = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-nav/20 bg-nav shadow-md">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="container mx-auto px-4 py-3 md:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 md:gap-3">
             <img 
               src={campLogo} 
               alt="Camp Sequoia Lake Logo" 
-              className="h-10 w-auto"
+              className="h-8 md:h-10 w-auto"
             />
             <div>
-              <h1 className="text-xl font-bold text-nav-foreground">My Trips</h1>
-              <p className="text-sm text-nav-foreground/80">Your carpool schedule</p>
+              <h1 className="text-lg md:text-xl font-bold text-nav-foreground">My Trips</h1>
+              <p className="text-xs md:text-sm text-nav-foreground/80 hidden sm:block">Your carpool schedule</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="text-nav-foreground hover:bg-nav-foreground/10">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
-            </Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="text-nav-foreground hover:bg-nav-foreground/10 hidden md:flex">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">My Trips</h1>
-          <p className="text-muted-foreground">
+      <main className="container mx-auto px-4 py-4 md:py-8 pb-mobile-nav">
+        <div className="mb-4 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">My Trips</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             {userRole === "driver"
               ? "Manage trips you're driving"
               : "View trips you've joined"}
@@ -441,6 +442,8 @@ const MyTrips = () => {
           </div>
         )}
       </main>
+
+      <MobileNavigation />
     </div>
   );
 };
