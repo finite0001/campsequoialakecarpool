@@ -1,0 +1,50 @@
+{
+  "name": "Camp Sequoia Lake Carpool",
+  "short_name": "Camp Carpool",
+  "description": "Carpool coordination for Camp Sequoia Lake staff",
+  "theme_color": "#2d6a4f",
+  "background_color": "#f5f3ed",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["transportation", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Browse Trips",
+      "url": "/trips",
+      "description": "Find available carpools"
+    },
+    {
+      "name": "My Trips",
+      "url": "/my-trips",
+      "description": "View your trips"
+    }
+  ]
+}

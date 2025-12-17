@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { LogOut, Car, Users, Plus, Shield, CheckCircle2, AlertCircle, Upload } from "lucide-react";
 import { toast } from "sonner";
 import campLogo from "@/assets/camp-logo.png";
+import { MobileNavigation } from "@/components/MobileNavigation";
 
 interface Profile {
   id: string;
@@ -178,26 +179,26 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-nav/20 bg-nav shadow-md">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="container mx-auto px-4 py-3 md:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 md:gap-3">
             <img 
               src={campLogo} 
               alt="Camp Sequoia Lake Logo" 
-              className="h-10 w-auto"
+              className="h-8 md:h-10 w-auto"
             />
             <div>
-              <h1 className="text-xl font-bold text-nav-foreground">Camp Sequoia Lake</h1>
-              <p className="text-sm text-nav-foreground/80">Carpool Coordinator</p>
+              <h1 className="text-lg md:text-xl font-bold text-nav-foreground">Camp Sequoia Lake</h1>
+              <p className="text-xs md:text-sm text-nav-foreground/80 hidden sm:block">Carpool Coordinator</p>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-nav-foreground hover:bg-nav-foreground/10">
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
+            <LogOut className="w-4 h-4 md:mr-2" />
+            <span className="hidden md:inline">Sign Out</span>
           </Button>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-6 md:py-8 pb-mobile-nav">
         <div className="mb-8 animate-fade-in">
           <h2 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Welcome, {profile?.full_name}!
@@ -411,6 +412,12 @@ const Dashboard = () => {
           )}
         </div>
       </main>
+
+      <MobileNavigation 
+        isDriver={isDriver} 
+        isAdmin={isAdmin} 
+        hasVerifiedDocuments={hasVerifiedDocuments} 
+      />
     </div>
   );
 };
