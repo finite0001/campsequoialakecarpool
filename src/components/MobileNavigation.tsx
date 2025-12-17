@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, Car, Users, Plus, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { triggerHaptic } from "@/hooks/use-haptic";
 
 interface NavItem {
   icon: typeof Home;
@@ -45,7 +46,10 @@ export const MobileNavigation = ({
           return (
             <button
               key={item.path}
-              onClick={() => navigate(item.path)}
+              onClick={() => {
+                triggerHaptic("light");
+                navigate(item.path);
+              }}
               className={cn(
                 "flex flex-col items-center justify-center min-w-[60px] py-2 px-3 rounded-xl transition-all duration-200",
                 "active:scale-95 touch-manipulation",

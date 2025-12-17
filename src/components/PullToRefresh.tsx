@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, ReactNode } from "react";
 import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { triggerHaptic } from "@/hooks/use-haptic";
 
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>;
@@ -45,10 +46,12 @@ export const PullToRefresh = ({ onRefresh, children, className }: PullToRefreshP
 
     if (pullDistance >= THRESHOLD && !isRefreshing) {
       setIsRefreshing(true);
-      setPullDistance(60); // Keep indicator visible during refresh
+      setPullDistance(60);
+      triggerHaptic("medium");
       
       try {
         await onRefresh();
+        triggerHaptic("success");
       } finally {
         setIsRefreshing(false);
         setPullDistance(0);

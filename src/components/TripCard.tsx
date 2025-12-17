@@ -5,6 +5,7 @@ import { Calendar, MapPin, DollarSign, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { TripStatusBadge } from "@/components/TripStatusBadge";
 import { cn } from "@/lib/utils";
+import { triggerHaptic } from "@/hooks/use-haptic";
 
 interface TripCardProps {
   trip: {
@@ -42,7 +43,10 @@ export const TripCard = ({ trip, currentUserId, onClick, animationDelay = 0 }: T
           : "border-2 hover:border-primary/30 hover:shadow-xl"
       )}
       style={{ animationDelay: `${animationDelay}s` }}
-      onClick={onClick}
+      onClick={() => {
+        triggerHaptic("light");
+        onClick();
+      }}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
@@ -117,6 +121,7 @@ export const TripCard = ({ trip, currentUserId, onClick, animationDelay = 0 }: T
           variant={isJoined ? "outline" : isFull ? "secondary" : "default"}
           onClick={(e) => {
             e.stopPropagation();
+            triggerHaptic("medium");
             onClick();
           }}
         >
