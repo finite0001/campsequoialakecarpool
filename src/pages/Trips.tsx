@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { SkeletonTripCard } from "@/components/SkeletonCard";
 import { FilterSelect } from "@/components/FilterSelect";
 import { TripCard } from "@/components/TripCard";
 import { MobileNavigation } from "@/components/MobileNavigation";
+import { PullToRefresh } from "@/components/PullToRefresh";
 
 interface Trip {
   id: string;
@@ -48,8 +49,10 @@ const Trips = () => {
     loadTrips();
   }, []);
 
-  const loadTrips = async () => {
+  const loadTrips = useCallback(async (showLoading = true) => {
     try {
+      if (showLoading) setLoading(true);
+      
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -80,7 +83,12 @@ const Trips = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
+
+  const handleRefresh = useCallback(async () => {
+    await loadTrips(false);
+    toast.success("Trips refreshed");
+  }, [loadTrips]);
 
   const handleJoinTrip = async (tripId: string, availableSeats: number) => {
     if (availableSeats === 0) {
@@ -196,65 +204,67 @@ const Trips = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-4 md:py-8 pb-mobile-nav">
-        <div className="mb-4 md:mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">Available Trips</h1>
-          <p className="text-sm md:text-base text-muted-foreground">Browse and join upcoming carpools</p>
-        </div>
+      <PullToRefresh onRefresh={handleRefresh} className="min-h-[calc(100vh-4rem)]">
+        <main className="container mx-auto px-4 py-4 md:py-8 pb-mobile-nav">
+          <div className="mb-4 md:mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">Available Trips</h1>
+            <p className="text-sm md:text-base text-muted-foreground">Pull down to refresh • Browse and join carpools</p>
+          </div>
 
-        <div className="mb-6 space-y-4">
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
-              <SearchBar
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder="Search by location or driver..."
+          <div className="mb-6 space-y-4">
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="md:col-span-2">
+                <SearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Search by location or driver..."
+                />
+              </div>
+              <FilterSelect
+                value={seatsFilter}
+                onChange={setSeatsFilter}
+                options={[
+                  { value: "all", label: "All Trips" },
+                  { value: "available", label: "Available Seats" },
+                  { value: "full", label: "Full Trips" }
+                ]}
+                placeholder="Filter by seats"
               />
             </div>
-            <FilterSelect
-              value={seatsFilter}
-              onChange={setSeatsFilter}
-              options={[
-                { value: "all", label: "All Trips" },
-                { value: "available", label: "Available Seats" },
-                { value: "full", label: "Full Trips" }
-              ]}
-              placeholder="Filter by seats"
-            />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Filter className="w-4 h-4" />
+              Showing {filteredTrips.length} of {trips.length} trips
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Filter className="w-4 h-4" />
-            Showing {filteredTrips.length} of {trips.length} trips
-          </div>
-        </div>
 
-        {filteredTrips.length === 0 ? (
-          <EmptyState
-            icon={Car}
-            title={trips.length === 0 ? "No trips available yet" : "No trips match your filters"}
-            description={trips.length === 0 
-              ? "Check back later or create your own trip if you're a verified driver"
-              : "Try adjusting your search or filter criteria"}
-            actionLabel="Back to Dashboard"
-            onAction={() => navigate("/dashboard")}
-          />
-        ) : (
-          <div className="grid md:grid-cols-2 gap-4 md:gap-6">
-            {filteredTrips.map((trip, index) => (
-              <TripCard
-                key={trip.id}
-                trip={trip}
-                currentUserId={currentUserId}
-                onClick={() => {
-                  setSelectedTrip(trip);
-                  setDetailsDialogOpen(true);
-                }}
-                animationDelay={index * 0.05}
-              />
-            ))}
-          </div>
-        )}
-      </main>
+          {filteredTrips.length === 0 ? (
+            <EmptyState
+              icon={Car}
+              title={trips.length === 0 ? "No trips available yet" : "No trips match your filters"}
+              description={trips.length === 0 
+                ? "Check back later or create your own trip if you're a verified driver"
+                : "Try adjusting your search or filter criteria"}
+              actionLabel="Back to Dashboard"
+              onAction={() => navigate("/dashboard")}
+            />
+          ) : (
+            <div className="grid md:grid-cols-2 gap-4 md:gap-6">
+              {filteredTrips.map((trip, index) => (
+                <TripCard
+                  key={trip.id}
+                  trip={trip}
+                  currentUserId={currentUserId}
+                  onClick={() => {
+                    setSelectedTrip(trip);
+                    setDetailsDialogOpen(true);
+                  }}
+                  animationDelay={index * 0.05}
+                />
+              ))}
+            </div>
+          )}
+        </main>
+      </PullToRefresh>
 
       <MobileNavigation />
     </div>
