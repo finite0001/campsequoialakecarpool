@@ -26,8 +26,83 @@ const VEHICLE_TYPES = {
 
 type VehicleType = keyof typeof VEHICLE_TYPES;
 
-// Default gas price estimate (California average)
-const DEFAULT_GAS_PRICE = 4.50;
+// Regional gas price averages by US state (as of late 2024)
+const STATE_GAS_PRICES: Record<string, { price: number; region: string }> = {
+  // West Coast (Higher prices)
+  CA: { price: 4.85, region: "California" },
+  WA: { price: 4.25, region: "Washington" },
+  OR: { price: 4.15, region: "Oregon" },
+  HI: { price: 4.95, region: "Hawaii" },
+  AK: { price: 4.20, region: "Alaska" },
+  NV: { price: 4.10, region: "Nevada" },
+  AZ: { price: 3.65, region: "Arizona" },
+  // Mountain West
+  CO: { price: 3.45, region: "Colorado" },
+  UT: { price: 3.55, region: "Utah" },
+  NM: { price: 3.35, region: "New Mexico" },
+  WY: { price: 3.45, region: "Wyoming" },
+  MT: { price: 3.50, region: "Montana" },
+  ID: { price: 3.65, region: "Idaho" },
+  // Midwest (Lower prices)
+  TX: { price: 2.95, region: "Texas" },
+  OK: { price: 2.85, region: "Oklahoma" },
+  KS: { price: 2.95, region: "Kansas" },
+  NE: { price: 3.15, region: "Nebraska" },
+  SD: { price: 3.25, region: "South Dakota" },
+  ND: { price: 3.30, region: "North Dakota" },
+  MN: { price: 3.25, region: "Minnesota" },
+  IA: { price: 3.10, region: "Iowa" },
+  MO: { price: 2.90, region: "Missouri" },
+  AR: { price: 2.95, region: "Arkansas" },
+  LA: { price: 2.90, region: "Louisiana" },
+  MS: { price: 2.85, region: "Mississippi" },
+  // Great Lakes
+  IL: { price: 3.65, region: "Illinois" },
+  WI: { price: 3.25, region: "Wisconsin" },
+  MI: { price: 3.45, region: "Michigan" },
+  IN: { price: 3.25, region: "Indiana" },
+  OH: { price: 3.30, region: "Ohio" },
+  // Southeast
+  FL: { price: 3.35, region: "Florida" },
+  GA: { price: 3.15, region: "Georgia" },
+  SC: { price: 3.05, region: "South Carolina" },
+  NC: { price: 3.15, region: "North Carolina" },
+  VA: { price: 3.25, region: "Virginia" },
+  WV: { price: 3.35, region: "West Virginia" },
+  KY: { price: 3.20, region: "Kentucky" },
+  TN: { price: 3.05, region: "Tennessee" },
+  AL: { price: 3.00, region: "Alabama" },
+  // Northeast (Higher prices)
+  NY: { price: 3.65, region: "New York" },
+  PA: { price: 3.55, region: "Pennsylvania" },
+  NJ: { price: 3.45, region: "New Jersey" },
+  CT: { price: 3.55, region: "Connecticut" },
+  MA: { price: 3.50, region: "Massachusetts" },
+  RI: { price: 3.45, region: "Rhode Island" },
+  VT: { price: 3.55, region: "Vermont" },
+  NH: { price: 3.40, region: "New Hampshire" },
+  ME: { price: 3.50, region: "Maine" },
+  MD: { price: 3.45, region: "Maryland" },
+  DE: { price: 3.35, region: "Delaware" },
+  DC: { price: 3.55, region: "Washington D.C." },
+};
+
+const DEFAULT_GAS_PRICE = { price: 3.50, region: "National Average" };
+
+// Helper to extract state from Google Places result
+const getStateFromPlace = (place: google.maps.places.PlaceResult | undefined): { price: number; region: string } => {
+  if (!place?.address_components) return DEFAULT_GAS_PRICE;
+  
+  const stateComponent = place.address_components.find(
+    (component) => component.types.includes("administrative_area_level_1")
+  );
+  
+  if (stateComponent?.short_name && STATE_GAS_PRICES[stateComponent.short_name]) {
+    return STATE_GAS_PRICES[stateComponent.short_name];
+  }
+  
+  return DEFAULT_GAS_PRICE;
+};
 
 // Validation schema for trip creation
 const tripSchema = z.object({
@@ -51,6 +126,7 @@ const CreateTrip = () => {
   const [vehicleType, setVehicleType] = useState<VehicleType>("sedan");
   const [estimatedFuelCost, setEstimatedFuelCost] = useState<number | null>(null);
   const [isManualFuelCost, setIsManualFuelCost] = useState(false);
+  const [gasPriceInfo, setGasPriceInfo] = useState(DEFAULT_GAS_PRICE);
   const [formData, setFormData] = useState({
     departure_location: "",
     arrival_location: "Camp Sequoia Lake",
@@ -134,8 +210,12 @@ const CreateTrip = () => {
     calculateRoute();
   }, [departurePlace, arrivalPlace, mapsLoaded]);
 
-  // Calculate estimated fuel cost when distance or vehicle type changes
+  // Calculate estimated fuel cost when distance, vehicle type, or departure location changes
   useEffect(() => {
+    // Update gas price based on departure location
+    const priceInfo = getStateFromPlace(departurePlace);
+    setGasPriceInfo(priceInfo);
+    
     if (!tripDistance || isManualFuelCost) return;
     
     const distanceMiles = parseFloat(tripDistance.replace(/[^0-9.]/g, ''));
@@ -146,12 +226,12 @@ const CreateTrip = () => {
     
     const mpg = VEHICLE_TYPES[vehicleType].mpg;
     const gallonsNeeded = distanceMiles / mpg;
-    const cost = gallonsNeeded * DEFAULT_GAS_PRICE;
+    const cost = gallonsNeeded * priceInfo.price;
     const roundedCost = Math.round(cost * 100) / 100;
     
     setEstimatedFuelCost(roundedCost);
     setFormData(prev => ({ ...prev, fuel_cost: roundedCost.toFixed(2) }));
-  }, [tripDistance, vehicleType, isManualFuelCost]);
+  }, [tripDistance, vehicleType, isManualFuelCost, departurePlace]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -472,7 +552,7 @@ const CreateTrip = () => {
                     />
                     {tripDistance && estimatedFuelCost !== null && (
                       <p className="text-xs text-muted-foreground">
-                        Based on {tripDistance} at {VEHICLE_TYPES[vehicleType].mpg} MPG × ${DEFAULT_GAS_PRICE.toFixed(2)}/gal
+                        Based on {tripDistance} at {VEHICLE_TYPES[vehicleType].mpg} MPG × ${gasPriceInfo.price.toFixed(2)}/gal ({gasPriceInfo.region})
                       </p>
                     )}
                   </div>
