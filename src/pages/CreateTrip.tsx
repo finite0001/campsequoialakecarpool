@@ -8,13 +8,26 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Car, Fuel } from "lucide-react";
 import campLogo from "@/assets/camp-logo.png";
 import { z } from "zod";
 import LocationAutocomplete from "@/components/LocationAutocomplete";
 import TripRouteMap from "@/components/TripRouteMap";
 import { loadGoogleMapsScript } from "@/lib/maps";
+
+// Vehicle types with MPG estimates
+const VEHICLE_TYPES = {
+  suv: { label: "SUV / Truck", mpg: 18, icon: "🚙" },
+  sedan: { label: "Sedan / Compact", mpg: 28, icon: "🚗" },
+  hybrid: { label: "Hybrid / Electric", mpg: 45, icon: "⚡" },
+} as const;
+
+type VehicleType = keyof typeof VEHICLE_TYPES;
+
+// Default gas price estimate (California average)
+const DEFAULT_GAS_PRICE = 4.50;
 
 // Validation schema for trip creation
 const tripSchema = z.object({
@@ -35,6 +48,9 @@ const CreateTrip = () => {
   const [tripDistance, setTripDistance] = useState<string>("");
   const [tripDuration, setTripDuration] = useState<string>("");
   const [calculatingRoute, setCalculatingRoute] = useState(false);
+  const [vehicleType, setVehicleType] = useState<VehicleType>("sedan");
+  const [estimatedFuelCost, setEstimatedFuelCost] = useState<number | null>(null);
+  const [isManualFuelCost, setIsManualFuelCost] = useState(false);
   const [formData, setFormData] = useState({
     departure_location: "",
     arrival_location: "Camp Sequoia Lake",
@@ -117,6 +133,25 @@ const CreateTrip = () => {
 
     calculateRoute();
   }, [departurePlace, arrivalPlace, mapsLoaded]);
+
+  // Calculate estimated fuel cost when distance or vehicle type changes
+  useEffect(() => {
+    if (!tripDistance || isManualFuelCost) return;
+    
+    const distanceMiles = parseFloat(tripDistance.replace(/[^0-9.]/g, ''));
+    if (!distanceMiles || isNaN(distanceMiles)) {
+      setEstimatedFuelCost(null);
+      return;
+    }
+    
+    const mpg = VEHICLE_TYPES[vehicleType].mpg;
+    const gallonsNeeded = distanceMiles / mpg;
+    const cost = gallonsNeeded * DEFAULT_GAS_PRICE;
+    const roundedCost = Math.round(cost * 100) / 100;
+    
+    setEstimatedFuelCost(roundedCost);
+    setFormData(prev => ({ ...prev, fuel_cost: roundedCost.toFixed(2) }));
+  }, [tripDistance, vehicleType, isManualFuelCost]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -360,43 +395,87 @@ const CreateTrip = () => {
                 />
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-6">
+              {/* Vehicle Type & Fuel Cost Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-base font-medium">
+                  <Fuel className="w-5 h-5 text-primary" />
+                  <span>Fuel Cost Estimation</span>
+                </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="seats" className="text-base font-medium">Available Seats *</Label>
-                  <Input
-                    id="seats"
-                    type="number"
-                    min="1"
-                    max="8"
-                    value={formData.total_seats}
-                    onChange={(e) =>
-                      setFormData({ ...formData, total_seats: parseInt(e.target.value) })
-                    }
-                    required
-                    className="h-11"
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    How many passengers can you take?
-                  </p>
+                  <Label htmlFor="vehicle-type" className="text-sm font-medium">Vehicle Type</Label>
+                  <Select
+                    value={vehicleType}
+                    onValueChange={(value: VehicleType) => {
+                      setVehicleType(value);
+                      setIsManualFuelCost(false);
+                    }}
+                  >
+                    <SelectTrigger id="vehicle-type" className="h-11">
+                      <SelectValue placeholder="Select vehicle type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(VEHICLE_TYPES) as VehicleType[]).map((type) => (
+                        <SelectItem key={type} value={type}>
+                          <span className="flex items-center gap-2">
+                            <span>{VEHICLE_TYPES[type].icon}</span>
+                            <span>{VEHICLE_TYPES[type].label}</span>
+                            <span className="text-muted-foreground text-sm">({VEHICLE_TYPES[type].mpg} MPG)</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="cost" className="text-base font-medium">Total Fuel Cost (Optional)</Label>
-                  <Input
-                    id="cost"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.fuel_cost}
-                    onChange={(e) =>
-                      setFormData({ ...formData, fuel_cost: e.target.value })
-                    }
-                    placeholder="0.00"
-                    className="h-11"
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Passengers coordinate payment
-                  </p>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="seats" className="text-sm font-medium">Available Seats *</Label>
+                    <Input
+                      id="seats"
+                      type="number"
+                      min="1"
+                      max="8"
+                      value={formData.total_seats}
+                      onChange={(e) =>
+                        setFormData({ ...formData, total_seats: parseInt(e.target.value) })
+                      }
+                      required
+                      className="h-11"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      How many passengers can you take?
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="cost" className="text-sm font-medium">Total Fuel Cost</Label>
+                      {estimatedFuelCost !== null && !isManualFuelCost && (
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                          Estimated
+                        </span>
+                      )}
+                    </div>
+                    <Input
+                      id="cost"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.fuel_cost}
+                      onChange={(e) => {
+                        setFormData({ ...formData, fuel_cost: e.target.value });
+                        setIsManualFuelCost(true);
+                      }}
+                      placeholder="0.00"
+                      className="h-11"
+                    />
+                    {tripDistance && estimatedFuelCost !== null && (
+                      <p className="text-xs text-muted-foreground">
+                        Based on {tripDistance} at {VEHICLE_TYPES[vehicleType].mpg} MPG × ${DEFAULT_GAS_PRICE.toFixed(2)}/gal
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
