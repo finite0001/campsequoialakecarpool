@@ -51,6 +51,7 @@ export const MobileNavigation = ({
                 triggerHaptic("light");
                 navigate(item.path);
               }}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
                 "flex flex-col items-center justify-center min-w-[60px] py-2 px-3 rounded-xl transition-all duration-200",
                 "active:scale-95 touch-manipulation",

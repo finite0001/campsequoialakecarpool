@@ -16,15 +16,7 @@ import { z } from "zod";
 import LocationAutocomplete from "@/components/LocationAutocomplete";
 import TripRouteMap from "@/components/TripRouteMap";
 import { loadGoogleMapsScript } from "@/lib/maps";
-
-// Vehicle types with MPG estimates
-const VEHICLE_TYPES = {
-  suv: { label: "SUV / Truck", mpg: 18, icon: "🚙" },
-  sedan: { label: "Sedan / Compact", mpg: 28, icon: "🚗" },
-  hybrid: { label: "Hybrid / Electric", mpg: 45, icon: "⚡" },
-} as const;
-
-type VehicleType = keyof typeof VEHICLE_TYPES;
+import { VEHICLE_TYPES, type VehicleType } from "@/lib/constants";
 
 // Regional gas price averages by US state — update periodically at https://gasprices.aaa.com/state-gas-price-averages/
 const STATE_GAS_PRICES: Record<string, { price: number; region: string }> = {

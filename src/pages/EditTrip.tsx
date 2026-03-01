@@ -16,14 +16,7 @@ import { z } from "zod";
 import LocationAutocomplete from "@/components/LocationAutocomplete";
 import TripRouteMap from "@/components/TripRouteMap";
 import { loadGoogleMapsScript } from "@/lib/maps";
-
-const VEHICLE_TYPES = {
-  suv: { label: "SUV / Truck", mpg: 18, icon: "🚙" },
-  sedan: { label: "Sedan / Compact", mpg: 28, icon: "🚗" },
-  hybrid: { label: "Hybrid / Electric", mpg: 45, icon: "⚡" },
-} as const;
-
-type VehicleType = keyof typeof VEHICLE_TYPES;
+import { VEHICLE_TYPES, type VehicleType } from "@/lib/constants";
 
 const tripSchema = z.object({
   departure_location: z.string().trim().min(3, "Departure location must be at least 3 characters").max(200),

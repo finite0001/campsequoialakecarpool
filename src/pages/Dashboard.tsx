@@ -154,8 +154,8 @@ const Dashboard = () => {
         myTrips: myTripsCount + (passengerCount || 0),
         availableRides: availableCount || 0
       });
-    } catch (error) {
-      console.error("Error loading stats:", error);
+    } catch {
+      // Stats are non-critical — dashboard still renders without them
     }
   };
 

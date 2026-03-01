@@ -103,7 +103,6 @@ const Trips = () => {
 
       setTrips(tripsData as any);
     } catch (error: any) {
-      console.error("Error loading trips:", error);
       toast.error("Failed to load trips");
     } finally {
       setLoading(false);
@@ -154,7 +153,6 @@ const Trips = () => {
       toast.success("Successfully joined the trip!");
       loadTrips();
     } catch (error: any) {
-      console.error("Error joining trip:", error);
       toast.error("Failed to join trip");
     }
   };
