@@ -96,6 +96,7 @@ const Trips = () => {
           participants:trip_participants(passenger_id)
         `)
         .gte("departure_datetime", new Date().toISOString())
+        .neq("status", "cancelled")
         .order("departure_datetime", { ascending: true });
 
       if (error) throw error;

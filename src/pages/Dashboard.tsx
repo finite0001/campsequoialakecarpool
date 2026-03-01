@@ -104,17 +104,19 @@ const Dashboard = () => {
 
   const loadStats = async (userId: string, isDriver: boolean) => {
     try {
-      // Count upcoming trips (all trips)
+      // Count upcoming trips (all trips, excluding cancelled)
       const { count: upcomingCount } = await supabase
         .from("trips")
         .select("*", { count: "exact", head: true })
-        .gte("departure_datetime", new Date().toISOString());
+        .gte("departure_datetime", new Date().toISOString())
+        .neq("status", "cancelled");
 
-      // Count available rides with seats
+      // Count available rides with seats (excluding cancelled)
       const { count: availableCount } = await supabase
         .from("trips")
         .select("*", { count: "exact", head: true })
         .gte("departure_datetime", new Date().toISOString())
+        .neq("status", "cancelled")
         .gt("available_seats", 0);
 
       // Count user's trips (either as driver or passenger)

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Trash2, ExternalLink, Share2, Phone, Mail } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Trash2, ExternalLink, Share2, Phone, Mail, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import campLogo from "@/assets/camp-logo.png";
@@ -52,6 +52,7 @@ const MyTrips = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [hasVerifiedDocuments, setHasVerifiedDocuments] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; tripId: string }>({ open: false, tripId: "" });
+  const [cancelConfirm, setCancelConfirm] = useState<{ open: boolean; tripId: string }>({ open: false, tripId: "" });
 
   const loadTrips = useCallback(async (showLoading = true) => {
     try {
@@ -159,6 +160,22 @@ const MyTrips = () => {
     }
   };
 
+  const handleCancelTrip = async (tripId: string) => {
+    try {
+      const { error } = await supabase
+        .from("trips")
+        .update({ status: "cancelled" })
+        .eq("id", tripId);
+
+      if (error) throw error;
+
+      toast.success("Trip cancelled — passengers have been notified via the app");
+      loadTrips();
+    } catch (error: any) {
+      toast.error("Unable to cancel trip. Please try again.");
+    }
+  };
+
   const handleDeleteTrip = async (tripId: string) => {
     try {
       const { error } = await supabase.from("trips").delete().eq("id", tripId);
@@ -191,6 +208,14 @@ const MyTrips = () => {
 
   return (
     <>
+    <ConfirmDialog
+      open={cancelConfirm.open}
+      onOpenChange={(open) => setCancelConfirm({ ...cancelConfirm, open })}
+      onConfirm={() => handleCancelTrip(cancelConfirm.tripId)}
+      title="Cancel This Trip?"
+      description="This will mark the trip as cancelled. Passengers will see it as cancelled in their My Trips list. You can delete it later to remove it entirely."
+      confirmText="Yes, Cancel Trip"
+    />
     <ConfirmDialog
       open={deleteConfirm.open}
       onOpenChange={(open) => setDeleteConfirm({ ...deleteConfirm, open })}
@@ -444,14 +469,35 @@ const MyTrips = () => {
 
                     <div className="flex gap-2 pt-2">
                       {isDriver ? (
-                        <Button
-                          variant="destructive"
-                          onClick={() => setDeleteConfirm({ open: true, tripId: trip.id })}
-                          className="flex-1"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete Trip
-                        </Button>
+                        trip.status === "cancelled" ? (
+                          <Button
+                            variant="destructive"
+                            onClick={() => setDeleteConfirm({ open: true, tripId: trip.id })}
+                            className="flex-1"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete Trip
+                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              variant="outline"
+                              className="flex-1 border-warning text-warning hover:bg-warning/10"
+                              onClick={() => setCancelConfirm({ open: true, tripId: trip.id })}
+                            >
+                              <XCircle className="w-4 h-4 mr-2" />
+                              Cancel Trip
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:bg-destructive/10"
+                              onClick={() => setDeleteConfirm({ open: true, tripId: trip.id })}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )
                       ) : myParticipation ? (
                         <Button
                           variant="outline"
