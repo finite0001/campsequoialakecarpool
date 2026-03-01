@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Car, Users, Plus, Shield } from "lucide-react";
+import { Home, Car, Users, Plus, Shield, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { triggerHaptic } from "@/hooks/use-haptic";
 
@@ -31,9 +31,9 @@ export const MobileNavigation = ({
       ? [{ icon: Plus, label: "Create", path: "/create-trip", showFor: "all" as const }] 
       : []),
     { icon: Users, label: "My Trips", path: "/my-trips", showFor: "all" },
-    ...(isAdmin 
-      ? [{ icon: Shield, label: "Admin", path: "/admin", showFor: "admin" as const }] 
-      : []),
+    ...(isAdmin
+      ? [{ icon: Shield, label: "Admin", path: "/admin", showFor: "admin" as const }]
+      : [{ icon: UserCircle, label: "Profile", path: "/profile", showFor: "all" as const }]),
   ];
 
   return (

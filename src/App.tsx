@@ -12,6 +12,7 @@ import Trips from "./pages/Trips";
 import CreateTrip from "./pages/CreateTrip";
 import MyTrips from "./pages/MyTrips";
 import Admin from "./pages/Admin";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -70,6 +71,14 @@ const App = () => (
             element={
               <AuthGuard>
                 <Admin />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <AuthGuard>
+                <Profile />
               </AuthGuard>
             }
           />

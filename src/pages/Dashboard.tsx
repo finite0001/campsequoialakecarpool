@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Car, Users, Plus, Shield, CheckCircle2, AlertCircle, Upload } from "lucide-react";
+import { LogOut, Car, Users, Plus, Shield, CheckCircle2, AlertCircle, Upload, UserCircle } from "lucide-react";
 import { toast } from "sonner";
 import campLogo from "@/assets/camp-logo.png";
 import { MobileNavigation } from "@/components/MobileNavigation";
@@ -211,10 +211,16 @@ const Dashboard = () => {
               <p className="text-xs md:text-sm text-nav-foreground/80 hidden sm:block">Carpool Coordinator</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-nav-foreground hover:bg-nav-foreground/10">
-            <LogOut className="w-4 h-4 md:mr-2" />
-            <span className="hidden md:inline">Sign Out</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/profile")} className="text-nav-foreground hover:bg-nav-foreground/10">
+              <UserCircle className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">Profile</span>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-nav-foreground hover:bg-nav-foreground/10">
+              <LogOut className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">Sign Out</span>
+            </Button>
+          </div>
         </div>
       </header>
 
