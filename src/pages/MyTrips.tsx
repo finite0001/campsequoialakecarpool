@@ -54,6 +54,7 @@ const MyTrips = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; tripId: string }>({ open: false, tripId: "" });
   const [cancelConfirm, setCancelConfirm] = useState<{ open: boolean; tripId: string }>({ open: false, tripId: "" });
   const [checkins, setCheckins] = useState<Record<string, string[]>>({});
+  const [checkingIn, setCheckingIn] = useState<string | null>(null);
 
   const loadTrips = useCallback(async (showLoading = true) => {
     try {
@@ -213,7 +214,9 @@ const MyTrips = () => {
   };
 
   const handleCheckIn = async (tripId: string) => {
+    if (checkingIn === tripId) return;
     try {
+      setCheckingIn(tripId);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
@@ -234,6 +237,8 @@ const MyTrips = () => {
       toast.success("Checked in! See you at the departure point.");
     } catch (error: any) {
       toast.error("Unable to check in. Please try again.");
+    } finally {
+      setCheckingIn(null);
     }
   };
 
@@ -552,9 +557,10 @@ const MyTrips = () => {
                               <Button
                                 className="flex-1 bg-success hover:bg-success/90 text-success-foreground"
                                 onClick={() => handleCheckIn(trip.id)}
+                                disabled={checkingIn === trip.id}
                               >
                                 <CheckCircle2 className="w-4 h-4 mr-2" />
-                                Check In
+                                {checkingIn === trip.id ? "Checking in..." : "Check In"}
                               </Button>
                             )}
                             {isDepartureSoon && isCheckedIn && (
@@ -595,9 +601,10 @@ const MyTrips = () => {
                             <Button
                               className="flex-1 bg-success hover:bg-success/90 text-success-foreground"
                               onClick={() => handleCheckIn(trip.id)}
+                              disabled={checkingIn === trip.id}
                             >
                               <CheckCircle2 className="w-4 h-4 mr-2" />
-                              Check In
+                              {checkingIn === trip.id ? "Checking in..." : "Check In"}
                             </Button>
                           )}
                           {isDepartureSoon && isCheckedIn && (

@@ -52,7 +52,7 @@ const TripRouteMap = ({ departureLocation, arrivalLocation }: TripRouteMapProps)
           map: mapInstanceRef.current,
           title: "Departure: " + departureLocation.formatted_address,
           icon: {
-            url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png",
+            url: "https://maps.google.com/mapfiles/ms/icons/green-dot.png",
           },
         });
         mapInstanceRef.current.setCenter(departureLocation.geometry.location);
@@ -64,7 +64,7 @@ const TripRouteMap = ({ departureLocation, arrivalLocation }: TripRouteMapProps)
           map: mapInstanceRef.current,
           title: "Arrival: " + arrivalLocation.formatted_address,
           icon: {
-            url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+            url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
           },
         });
         if (!departureLocation) {

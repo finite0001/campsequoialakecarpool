@@ -95,16 +95,17 @@ const EditTrip = () => {
           .from("trips")
           .select("*, participants:trip_participants(passenger_id)")
           .eq("id", id)
-          .single();
+          .eq("driver_id", session.user.id)
+          .maybeSingle();
 
-        if (error || !trip) {
-          toast.error("Trip not found");
+        if (error) {
+          toast.error("Unable to load trip. Please try again.");
           navigate("/my-trips");
           return;
         }
 
-        if (trip.driver_id !== session.user.id) {
-          toast.error("You can only edit your own trips");
+        if (!trip) {
+          toast.error("Trip not found or you don't have permission to edit it");
           navigate("/my-trips");
           return;
         }
