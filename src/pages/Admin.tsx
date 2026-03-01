@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Users, Car, Shield, UserPlus, UserMinus, Download, ArrowUpDown } from "lucide-react";
+import { ArrowLeft, Users, Car, Shield, UserPlus, UserMinus, Download, ArrowUpDown, FileCheck, CheckCircle, XCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import campLogo from "@/assets/camp-logo.png";
@@ -46,19 +46,35 @@ interface Trip {
   }>;
 }
 
+interface DriverDocument {
+  id: string;
+  driver_id: string;
+  drivers_license_path: string;
+  insurance_card_path: string;
+  verification_status: "pending" | "approved" | "rejected";
+  uploaded_at: string;
+  driver: {
+    full_name: string;
+    email: string;
+    phone: string | null;
+  };
+}
+
 const Admin = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
-  
+  const [documents, setDocuments] = useState<DriverDocument[]>([]);
+  const [docStatusFilter, setDocStatusFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
+
   // Search and filter states
   const [userSearch, setUserSearch] = useState("");
   const [tripSearch, setTripSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [userSort, setUserSort] = useState<"name" | "date">("date");
   const [tripSort, setTripSort] = useState<"date" | "seats">("date");
-  
+
   // Confirmation dialog states
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
@@ -110,10 +126,48 @@ const Admin = () => {
 
       if (tripsError) throw tripsError;
       setTrips(tripsData as any);
+
+      // Load driver documents with driver profile
+      const { data: docsData, error: docsError } = await supabase
+        .from("driver_documents")
+        .select(`
+          *,
+          driver:profiles!driver_documents_driver_id_fkey(full_name, email, phone)
+        `)
+        .order("uploaded_at", { ascending: false });
+
+      if (docsError) throw docsError;
+      setDocuments(docsData as any);
     } catch (error: any) {
       toast.error("Unable to load admin data. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateDocumentStatus = async (docId: string, driverId: string, status: "approved" | "rejected") => {
+    try {
+      const { error } = await supabase
+        .from("driver_documents")
+        .update({ verification_status: status })
+        .eq("id", docId);
+
+      if (error) throw error;
+
+      if (status === "approved") {
+        // Ensure driver role exists
+        const { error: roleError } = await supabase
+          .from("user_roles")
+          .upsert({ user_id: driverId, role: "driver" }, { onConflict: "user_id,role" });
+        if (roleError) throw roleError;
+        toast.success("Driver approved — they can now create trips");
+      } else {
+        toast.success("Documents rejected — driver has been notified");
+      }
+
+      await loadData();
+    } catch (error: any) {
+      toast.error("Unable to update document status. Please try again.");
     }
   };
 
@@ -297,6 +351,15 @@ const Admin = () => {
           <p className="text-muted-foreground">Manage all carpools and users</p>
         </div>
 
+        {documents.filter(d => d.verification_status === "pending").length > 0 && (
+          <div className="mb-6 p-4 rounded-lg border-2 border-warning bg-warning/5 flex items-center gap-3">
+            <Clock className="w-5 h-5 text-warning flex-shrink-0" />
+            <p className="font-medium text-sm">
+              {documents.filter(d => d.verification_status === "pending").length} driver document{documents.filter(d => d.verification_status === "pending").length !== 1 ? "s" : ""} waiting for review
+            </p>
+          </div>
+        )}
+
         <div className="grid md:grid-cols-3 gap-6 mb-8">
           <Card className="border-2 hover:border-primary/50 hover:shadow-lg transition-all duration-300 animate-fade-up">
             <CardHeader className="pb-3">
@@ -344,8 +407,17 @@ const Admin = () => {
           </Card>
         </div>
 
-        <Tabs defaultValue="users" className="space-y-6">
+        <Tabs defaultValue="documents" className="space-y-6">
           <TabsList>
+            <TabsTrigger value="documents">
+              <FileCheck className="w-4 h-4 mr-2" />
+              Documents
+              {documents.filter(d => d.verification_status === "pending").length > 0 && (
+                <span className="ml-2 bg-warning text-warning-foreground text-xs px-1.5 py-0.5 rounded-full font-bold">
+                  {documents.filter(d => d.verification_status === "pending").length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="users">
               <Users className="w-4 h-4 mr-2" />
               Users
@@ -355,6 +427,103 @@ const Admin = () => {
               Trips
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="documents" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Driver Document Verification</CardTitle>
+                    <CardDescription>Review and approve driver license and insurance submissions</CardDescription>
+                  </div>
+                  <FilterSelect
+                    value={docStatusFilter}
+                    onChange={(v) => setDocStatusFilter(v as typeof docStatusFilter)}
+                    options={[
+                      { value: "pending", label: "Pending Review" },
+                      { value: "approved", label: "Approved" },
+                      { value: "rejected", label: "Rejected" },
+                      { value: "all", label: "All Documents" },
+                    ]}
+                    placeholder="Filter by status"
+                  />
+                </div>
+              </CardHeader>
+              <CardContent>
+                {documents.filter(d => docStatusFilter === "all" || d.verification_status === docStatusFilter).length === 0 ? (
+                  <EmptyState
+                    icon={FileCheck}
+                    title={docStatusFilter === "pending" ? "No pending documents" : "No documents found"}
+                    description={docStatusFilter === "pending" ? "All driver submissions have been reviewed" : "Try a different filter"}
+                  />
+                ) : (
+                  <div className="space-y-4">
+                    {documents
+                      .filter(d => docStatusFilter === "all" || d.verification_status === docStatusFilter)
+                      .map((doc) => (
+                        <div key={doc.id} className="p-4 border rounded-lg space-y-3">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <p className="font-medium">{doc.driver.full_name}</p>
+                              <p className="text-sm text-muted-foreground">{doc.driver.email}</p>
+                              {doc.driver.phone && (
+                                <p className="text-sm text-muted-foreground">{doc.driver.phone}</p>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Submitted {format(new Date(doc.uploaded_at), "PPP 'at' p")}
+                              </p>
+                            </div>
+                            <Badge
+                              variant={
+                                doc.verification_status === "approved" ? "default" :
+                                doc.verification_status === "rejected" ? "destructive" : "secondary"
+                              }
+                              className="flex-shrink-0 flex items-center gap-1"
+                            >
+                              {doc.verification_status === "approved" && <CheckCircle className="w-3 h-3" />}
+                              {doc.verification_status === "rejected" && <XCircle className="w-3 h-3" />}
+                              {doc.verification_status === "pending" && <Clock className="w-3 h-3" />}
+                              {doc.verification_status}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            <p className="flex items-center gap-2">
+                              <FileCheck className="w-3 h-3" />
+                              License: <span className="font-mono text-xs">{doc.drivers_license_path.split("/").pop()}</span>
+                            </p>
+                            <p className="flex items-center gap-2">
+                              <FileCheck className="w-3 h-3" />
+                              Insurance: <span className="font-mono text-xs">{doc.insurance_card_path.split("/").pop()}</span>
+                            </p>
+                          </div>
+                          {doc.verification_status === "pending" && (
+                            <div className="flex gap-2 pt-1">
+                              <Button
+                                size="sm"
+                                className="flex-1"
+                                onClick={() => handleUpdateDocumentStatus(doc.id, doc.driver_id, "approved")}
+                              >
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="flex-1"
+                                onClick={() => handleUpdateDocumentStatus(doc.id, doc.driver_id, "rejected")}
+                              >
+                                <XCircle className="w-4 h-4 mr-2" />
+                                Reject
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="users" className="space-y-4">
             <Card>
@@ -492,7 +661,7 @@ const Admin = () => {
                     onChange={setTripSearch}
                     placeholder="Search by location or driver..."
                   />
-                  <div /> {/* Spacer */}
+                  <div />
                   <Button
                     variant="outline"
                     onClick={() => setTripSort(tripSort === "date" ? "seats" : "date")}

@@ -30,7 +30,6 @@ interface TripDetailsDialogProps {
   onOpenChange: (open: boolean) => void;
   onJoin: () => void;
   isJoined: boolean;
-  currentUserId: string;
 }
 
 export const TripDetailsDialog = ({

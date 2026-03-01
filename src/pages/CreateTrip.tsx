@@ -26,7 +26,7 @@ const VEHICLE_TYPES = {
 
 type VehicleType = keyof typeof VEHICLE_TYPES;
 
-// Regional gas price averages by US state (as of late 2024)
+// Regional gas price averages by US state — update periodically at https://gasprices.aaa.com/state-gas-price-averages/
 const STATE_GAS_PRICES: Record<string, { price: number; region: string }> = {
   // West Coast (Higher prices)
   CA: { price: 4.85, region: "California" },
@@ -136,31 +136,22 @@ const CreateTrip = () => {
     fuel_cost: "",
   });
 
-  console.log('CreateTrip component mounted, mapsLoaded:', mapsLoaded);
-
   // Load Google Maps API
   const loadMaps = useCallback(async () => {
     try {
-      console.log('Attempting to load Google Maps...');
       const { data, error } = await supabase.functions.invoke('get-google-maps-key');
-      console.log('Edge function response:', { data, error });
       if (error) {
-        console.error('Edge function error:', error);
         toast.error("Failed to load maps configuration");
         return;
       }
       if (data?.apiKey) {
-        console.log('Loading Google Maps script...');
         await loadGoogleMapsScript(data.apiKey);
-        console.log('Google Maps loaded successfully');
         setMapsLoaded(true);
         toast.success("Google Maps loaded");
       } else {
-        console.error('No API key in response:', data);
         toast.error("Google Maps API key not configured");
       }
     } catch (error) {
-      console.error("Failed to load Google Maps:", error);
       toast.error("Failed to load maps. Using basic location input.");
     }
   }, []);
@@ -192,14 +183,11 @@ const CreateTrip = () => {
           const element = result.rows[0].elements[0];
           setTripDistance(element.distance?.text || "");
           setTripDuration(element.duration?.text || "");
-          console.log('Route calculated:', element);
         } else {
-          console.error('Distance calculation failed:', result.rows[0]?.elements[0]?.status);
           setTripDistance("");
           setTripDuration("");
         }
       } catch (error) {
-        console.error("Error calculating distance:", error);
         setTripDistance("");
         setTripDuration("");
       } finally {

@@ -11,6 +11,7 @@ import campLogo from "@/assets/camp-logo.png";
 import { getGoogleMapsUrl, getGoogleMapsDirectionsUrl, copyToClipboard } from "@/lib/maps";
 import { TripStatusBadge } from "@/components/TripStatusBadge";
 import { MobileNavigation } from "@/components/MobileNavigation";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 interface Trip {
   id: string;
@@ -47,6 +48,9 @@ const MyTrips = () => {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [userRole, setUserRole] = useState<string>("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [hasVerifiedDocuments, setHasVerifiedDocuments] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; tripId: string }>({ open: false, tripId: "" });
 
   useEffect(() => {
     loadTrips();
@@ -74,6 +78,17 @@ const MyTrips = () => {
       const roles = userRoles?.map(r => r.role) || [];
       const isDriver = roles.includes("driver");
       setUserRole(isDriver ? "driver" : "passenger");
+      setIsAdmin(roles.includes("admin"));
+
+      if (isDriver) {
+        const { data: docs } = await supabase
+          .from("driver_documents")
+          .select("verification_status")
+          .eq("driver_id", session.user.id)
+          .eq("verification_status", "approved")
+          .maybeSingle();
+        setHasVerifiedDocuments(!!docs);
+      }
 
       if (isDriver) {
         // Load trips as driver
@@ -138,10 +153,6 @@ const MyTrips = () => {
   };
 
   const handleDeleteTrip = async (tripId: string) => {
-    if (!confirm("Are you sure you want to delete this trip?")) {
-      return;
-    }
-
     try {
       const { error } = await supabase.from("trips").delete().eq("id", tripId);
 
@@ -172,6 +183,16 @@ const MyTrips = () => {
   }
 
   return (
+    <>
+    <ConfirmDialog
+      open={deleteConfirm.open}
+      onOpenChange={(open) => setDeleteConfirm({ ...deleteConfirm, open })}
+      onConfirm={() => handleDeleteTrip(deleteConfirm.tripId)}
+      title="Delete Trip?"
+      description="Are you sure you want to delete this trip? All passengers will lose their seats and this cannot be undone."
+      confirmText="Delete Trip"
+      variant="destructive"
+    />
     <div className="min-h-screen bg-background">
       <header className="border-b border-nav/20 bg-nav shadow-md">
         <div className="container mx-auto px-4 py-3 md:py-4 flex items-center justify-between">
@@ -417,7 +438,7 @@ const MyTrips = () => {
                       {isDriver ? (
                         <Button
                           variant="destructive"
-                          onClick={() => handleDeleteTrip(trip.id)}
+                          onClick={() => setDeleteConfirm({ open: true, tripId: trip.id })}
                           className="flex-1"
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
@@ -443,8 +464,13 @@ const MyTrips = () => {
         )}
       </main>
 
-      <MobileNavigation />
+      <MobileNavigation
+        isDriver={userRole === "driver"}
+        isAdmin={isAdmin}
+        hasVerifiedDocuments={hasVerifiedDocuments}
+      />
     </div>
+    </>
   );
 };
 

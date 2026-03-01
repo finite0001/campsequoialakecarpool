@@ -63,12 +63,13 @@ const Dashboard = () => {
       setIsAdmin(roles.includes("admin"));
       setIsDriver(roles.includes("driver"));
 
-      // Check if driver has documents
+      // Check if driver has approved documents
       if (roles.includes("driver")) {
         const { data: docs } = await supabase
           .from("driver_documents")
-          .select("*")
+          .select("verification_status")
           .eq("driver_id", session.user.id)
+          .eq("verification_status", "approved")
           .maybeSingle();
 
         setHasVerifiedDocuments(!!docs);
@@ -120,8 +121,9 @@ const Dashboard = () => {
       
       const { count: passengerCount } = await supabase
         .from("trip_participants")
-        .select("trip_id", { count: "exact", head: true })
-        .eq("passenger_id", userId);
+        .select("trip_id, trip:trips!inner(departure_datetime)", { count: "exact", head: true })
+        .eq("passenger_id", userId)
+        .gte("trips.departure_datetime", new Date().toISOString());
 
       setStats({
         upcomingTrips: upcomingCount || 0,
@@ -278,12 +280,7 @@ const Dashboard = () => {
                 <Button
                   variant="outline"
                   size="default"
-                  onClick={() =>
-                    window.open(
-                      "https://example.com/liability-release",
-                      "_blank"
-                    )
-                  }
+                  disabled
                 >
                   View Full Release
                 </Button>

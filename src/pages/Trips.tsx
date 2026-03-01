@@ -40,6 +40,9 @@ const Trips = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [isDriver, setIsDriver] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [hasVerifiedDocuments, setHasVerifiedDocuments] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [seatsFilter, setSeatsFilter] = useState("all");
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
@@ -52,7 +55,7 @@ const Trips = () => {
   const loadTrips = useCallback(async (showLoading = true) => {
     try {
       if (showLoading) setLoading(true);
-      
+
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -63,6 +66,26 @@ const Trips = () => {
       }
 
       setCurrentUserId(session.user.id);
+
+      const { data: userRoles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id);
+
+      const roles = userRoles?.map(r => r.role) || [];
+      const driverRole = roles.includes("driver");
+      setIsDriver(driverRole);
+      setIsAdmin(roles.includes("admin"));
+
+      if (driverRole) {
+        const { data: docs } = await supabase
+          .from("driver_documents")
+          .select("verification_status")
+          .eq("driver_id", session.user.id)
+          .eq("verification_status", "approved")
+          .maybeSingle();
+        setHasVerifiedDocuments(!!docs);
+      }
 
       const { data: tripsData, error } = await supabase
         .from("trips")
@@ -181,7 +204,6 @@ const Trips = () => {
           }
         }}
         isJoined={selectedTrip ? selectedTrip.participants.some(p => p.passenger_id === currentUserId) : false}
-        currentUserId={currentUserId}
       />
     <div className="min-h-screen bg-background">
       <header className="border-b border-nav/20 bg-nav shadow-md">
@@ -266,7 +288,11 @@ const Trips = () => {
         </main>
       </PullToRefresh>
 
-      <MobileNavigation />
+      <MobileNavigation
+        isDriver={isDriver}
+        isAdmin={isAdmin}
+        hasVerifiedDocuments={hasVerifiedDocuments}
+      />
     </div>
     </>
   );
