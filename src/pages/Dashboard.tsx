@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Car, Users, Plus, Shield, CheckCircle2, AlertCircle, Upload, UserCircle } from "lucide-react";
+import { LogOut, Car, Users, Plus, Shield, CheckCircle2, AlertCircle, Upload, UserCircle, Megaphone } from "lucide-react";
 import { toast } from "sonner";
 import campLogo from "@/assets/camp-logo.png";
 import { MobileNavigation } from "@/components/MobileNavigation";
@@ -26,6 +26,7 @@ const Dashboard = () => {
   const [hasVerifiedDocuments, setHasVerifiedDocuments] = useState(false);
   const [hasAcknowledgedLiability, setHasAcknowledgedLiability] = useState(false);
   const [liabilityConfirmOpen, setLiabilityConfirmOpen] = useState(false);
+  const [latestBroadcast, setLatestBroadcast] = useState<{ title: string; message: string; sent_at: string } | null>(null);
   const [stats, setStats] = useState({
     upcomingTrips: 0,
     myTrips: 0,
@@ -84,6 +85,17 @@ const Dashboard = () => {
 
       setHasAcknowledgedLiability(!!liability);
       
+      // Load most recent broadcast from the last 7 days
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: broadcastData } = await supabase
+        .from("broadcast_messages")
+        .select("title, message, sent_at")
+        .gte("sent_at", sevenDaysAgo)
+        .order("sent_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setLatestBroadcast(broadcastData ?? null);
+
       // Load stats
       await loadStats(session.user.id, roles.includes("driver"));
     } catch (error: any) {
@@ -250,6 +262,21 @@ const Dashboard = () => {
             )}
           </div>
         </div>
+
+        {/* Broadcast banner */}
+        {latestBroadcast && (
+          <Card className="mb-6 border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 animate-fade-in">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Megaphone className="w-4 h-4 text-primary flex-shrink-0" />
+                {latestBroadcast.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground leading-relaxed">{latestBroadcast.message}</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8 animate-fade-in">

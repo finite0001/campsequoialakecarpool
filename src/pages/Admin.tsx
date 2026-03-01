@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Users, Car, Shield, UserPlus, UserMinus, Download, ArrowUpDown, FileCheck, CheckCircle, XCircle, Clock } from "lucide-react";
+import { ArrowLeft, Users, Car, Shield, UserPlus, UserMinus, Download, ArrowUpDown, FileCheck, CheckCircle, XCircle, Clock, Megaphone, Send } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import campLogo from "@/assets/camp-logo.png";
@@ -46,6 +46,17 @@ interface Trip {
   }>;
 }
 
+interface BroadcastMessage {
+  id: string;
+  title: string;
+  message: string;
+  target_audience: string | null;
+  sent_at: string | null;
+  sender: {
+    full_name: string;
+  } | null;
+}
+
 interface DriverDocument {
   id: string;
   driver_id: string;
@@ -67,6 +78,11 @@ const Admin = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [documents, setDocuments] = useState<DriverDocument[]>([]);
   const [docStatusFilter, setDocStatusFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
+  const [broadcasts, setBroadcasts] = useState<BroadcastMessage[]>([]);
+  const [broadcastTitle, setBroadcastTitle] = useState("");
+  const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [broadcastAudience, setBroadcastAudience] = useState("all");
+  const [sendingBroadcast, setSendingBroadcast] = useState(false);
 
   // Search and filter states
   const [userSearch, setUserSearch] = useState("");
@@ -138,6 +154,15 @@ const Admin = () => {
 
       if (docsError) throw docsError;
       setDocuments(docsData as any);
+
+      // Load broadcast messages
+      const { data: broadcastsData } = await supabase
+        .from("broadcast_messages")
+        .select("*, sender:profiles!broadcast_messages_sender_id_fkey(full_name)")
+        .order("sent_at", { ascending: false })
+        .limit(50);
+
+      setBroadcasts((broadcastsData as any) || []);
     } catch (error: any) {
       toast.error("Unable to load admin data. Please try again.");
     } finally {
@@ -238,6 +263,39 @@ const Admin = () => {
     link.download = `trips_${format(new Date(), "yyyy-MM-dd")}.csv`;
     link.click();
     toast.success("Trips exported successfully");
+  };
+
+  const handleSendBroadcast = async () => {
+    if (!broadcastTitle.trim() || !broadcastMessage.trim()) {
+      toast.error("Title and message are required");
+      return;
+    }
+
+    setSendingBroadcast(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { error } = await supabase.from("broadcast_messages").insert({
+        title: broadcastTitle.trim(),
+        message: broadcastMessage.trim(),
+        target_audience: broadcastAudience,
+        sender_id: session.user.id,
+        sent_at: new Date().toISOString(),
+      });
+
+      if (error) throw error;
+
+      toast.success("Broadcast sent to all users");
+      setBroadcastTitle("");
+      setBroadcastMessage("");
+      setBroadcastAudience("all");
+      await loadData();
+    } catch (error: any) {
+      toast.error("Unable to send broadcast. Please try again.");
+    } finally {
+      setSendingBroadcast(false);
+    }
   };
 
   // Filter and sort users
@@ -425,6 +483,10 @@ const Admin = () => {
             <TabsTrigger value="trips">
               <Car className="w-4 h-4 mr-2" />
               Trips
+            </TabsTrigger>
+            <TabsTrigger value="broadcasts">
+              <Megaphone className="w-4 h-4 mr-2" />
+              Broadcast
             </TabsTrigger>
           </TabsList>
 
@@ -707,6 +769,106 @@ const Admin = () => {
                     </div>
                   ))}
                 </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="broadcasts" className="space-y-6">
+            {/* Compose */}
+            <Card className="border-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <Megaphone className="w-4 h-4 text-primary" />
+                  </div>
+                  Send Announcement
+                </CardTitle>
+                <CardDescription>Message will appear on every user's dashboard for 7 days</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Title</label>
+                  <input
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    value={broadcastTitle}
+                    onChange={(e) => setBroadcastTitle(e.target.value)}
+                    placeholder="e.g. All trips delayed 30 minutes"
+                    maxLength={120}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Message</label>
+                  <textarea
+                    className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                    value={broadcastMessage}
+                    onChange={(e) => setBroadcastMessage(e.target.value)}
+                    placeholder="Enter the full announcement text…"
+                    maxLength={1000}
+                    rows={4}
+                  />
+                  <p className="text-xs text-muted-foreground text-right">{broadcastMessage.length}/1000</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Audience</label>
+                  <FilterSelect
+                    value={broadcastAudience}
+                    onChange={setBroadcastAudience}
+                    options={[
+                      { value: "all", label: "All Users" },
+                      { value: "drivers", label: "Drivers Only" },
+                      { value: "passengers", label: "Passengers Only" },
+                    ]}
+                    placeholder="Select audience"
+                  />
+                </div>
+                <Button
+                  className="w-full"
+                  onClick={handleSendBroadcast}
+                  disabled={sendingBroadcast || !broadcastTitle.trim() || !broadcastMessage.trim()}
+                >
+                  {sendingBroadcast ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Sending…
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Send Broadcast
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* History */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Broadcast History</CardTitle>
+                <CardDescription>{broadcasts.length} message{broadcasts.length !== 1 ? "s" : ""} sent</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {broadcasts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">No broadcasts sent yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {broadcasts.map((b) => (
+                      <div key={b.id} className="p-4 border rounded-lg space-y-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="font-medium text-sm">{b.title}</p>
+                          <Badge variant="outline" className="flex-shrink-0 text-xs capitalize">
+                            {b.target_audience ?? "all"}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{b.message}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {b.sent_at ? format(new Date(b.sent_at), "PPP 'at' p") : "Unknown time"}
+                          {b.sender ? ` · ${b.sender.full_name}` : ""}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>
