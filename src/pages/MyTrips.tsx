@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Trash2, ExternalLink, Share2, Phone, Mail, XCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Trash2, ExternalLink, Share2, Phone, Mail, XCircle, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import campLogo from "@/assets/camp-logo.png";
@@ -482,11 +482,19 @@ const MyTrips = () => {
                           <>
                             <Button
                               variant="outline"
+                              className="flex-1"
+                              onClick={() => navigate(`/edit-trip/${trip.id}`)}
+                            >
+                              <Pencil className="w-4 h-4 mr-2" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
                               className="flex-1 border-warning text-warning hover:bg-warning/10"
                               onClick={() => setCancelConfirm({ open: true, tripId: trip.id })}
                             >
                               <XCircle className="w-4 h-4 mr-2" />
-                              Cancel Trip
+                              Cancel
                             </Button>
                             <Button
                               variant="ghost"

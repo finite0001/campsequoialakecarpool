@@ -13,6 +13,7 @@ import CreateTrip from "./pages/CreateTrip";
 import MyTrips from "./pages/MyTrips";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
+import EditTrip from "./pages/EditTrip";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -79,6 +80,14 @@ const App = () => (
             element={
               <AuthGuard>
                 <Profile />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/edit-trip/:id"
+            element={
+              <AuthGuard>
+                <EditTrip />
               </AuthGuard>
             }
           />
