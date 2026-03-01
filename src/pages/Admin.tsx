@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -299,11 +299,11 @@ const Admin = () => {
   };
 
   // Filter and sort users
-  const filteredUsers = users
+  const filteredUsers = useMemo(() => users
     .filter(user => {
       const matchesSearch = user.full_name.toLowerCase().includes(userSearch.toLowerCase()) ||
                            user.email.toLowerCase().includes(userSearch.toLowerCase());
-      const matchesRole = roleFilter === "all" || 
+      const matchesRole = roleFilter === "all" ||
                          (roleFilter === "admin" && user.roles.includes("admin")) ||
                          (roleFilter === "driver" && user.roles.includes("driver")) ||
                          (roleFilter === "passenger" && !user.roles.includes("driver") && !user.roles.includes("admin"));
@@ -314,10 +314,10 @@ const Admin = () => {
         return a.full_name.localeCompare(b.full_name);
       }
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
+    }), [users, userSearch, roleFilter, userSort]);
 
   // Filter and sort trips
-  const filteredTrips = trips
+  const filteredTrips = useMemo(() => trips
     .filter(trip => {
       return trip.departure_location.toLowerCase().includes(tripSearch.toLowerCase()) ||
              trip.arrival_location.toLowerCase().includes(tripSearch.toLowerCase()) ||
@@ -328,7 +328,12 @@ const Admin = () => {
         return a.available_seats - b.available_seats;
       }
       return new Date(b.departure_datetime).getTime() - new Date(a.departure_datetime).getTime();
-    });
+    }), [trips, tripSearch, tripSort]);
+
+  const pendingDocCount = useMemo(
+    () => documents.filter(d => d.verification_status === "pending").length,
+    [documents]
+  );
 
   if (loading) {
     return (
@@ -361,8 +366,8 @@ const Admin = () => {
     );
   }
 
-  const drivers = users.filter((u) => u.roles.includes("driver"));
-  const passengers = users.filter((u) => u.roles.includes("passenger") || u.roles.length === 0);
+  const drivers = useMemo(() => users.filter((u) => u.roles.includes("driver")), [users]);
+  const passengers = useMemo(() => users.filter((u) => u.roles.includes("passenger") || u.roles.length === 0), [users]);
 
   return (
     <AdminGuard>
@@ -409,11 +414,11 @@ const Admin = () => {
           <p className="text-muted-foreground">Manage all carpools and users</p>
         </div>
 
-        {documents.filter(d => d.verification_status === "pending").length > 0 && (
+        {pendingDocCount > 0 && (
           <div className="mb-6 p-4 rounded-lg border-2 border-warning bg-warning/5 flex items-center gap-3">
             <Clock className="w-5 h-5 text-warning flex-shrink-0" />
             <p className="font-medium text-sm">
-              {documents.filter(d => d.verification_status === "pending").length} driver document{documents.filter(d => d.verification_status === "pending").length !== 1 ? "s" : ""} waiting for review
+              {pendingDocCount} driver document{pendingDocCount !== 1 ? "s" : ""} waiting for review
             </p>
           </div>
         )}
@@ -470,9 +475,9 @@ const Admin = () => {
             <TabsTrigger value="documents">
               <FileCheck className="w-4 h-4 mr-2" />
               Documents
-              {documents.filter(d => d.verification_status === "pending").length > 0 && (
+              {pendingDocCount > 0 && (
                 <span className="ml-2 bg-warning text-warning-foreground text-xs px-1.5 py-0.5 rounded-full font-bold">
-                  {documents.filter(d => d.verification_status === "pending").length}
+                  {pendingDocCount}
                 </span>
               )}
             </TabsTrigger>

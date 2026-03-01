@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, Car, Users, Plus, Shield, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,17 +25,17 @@ export const MobileNavigation = ({
   const navigate = useNavigate();
   const location = useLocation();
 
-  const navItems: NavItem[] = [
+  const navItems = useMemo<NavItem[]>(() => [
     { icon: Home, label: "Home", path: "/dashboard", showFor: "all" },
     { icon: Car, label: "Trips", path: "/trips", showFor: "all" },
-    ...(isAdmin || (isDriver && hasVerifiedDocuments) 
-      ? [{ icon: Plus, label: "Create", path: "/create-trip", showFor: "all" as const }] 
+    ...(isAdmin || (isDriver && hasVerifiedDocuments)
+      ? [{ icon: Plus, label: "Create", path: "/create-trip", showFor: "all" as const }]
       : []),
     { icon: Users, label: "My Trips", path: "/my-trips", showFor: "all" },
     ...(isAdmin
       ? [{ icon: Shield, label: "Admin", path: "/admin", showFor: "admin" as const }]
       : [{ icon: UserCircle, label: "Profile", path: "/profile", showFor: "all" as const }]),
-  ];
+  ], [isAdmin, isDriver, hasVerifiedDocuments]);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border md:hidden safe-area-bottom">

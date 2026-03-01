@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -110,6 +110,11 @@ const Trips = () => {
     }
   }, [navigate]);
 
+  const handleTripClick = useCallback((trip: Trip) => {
+    setSelectedTrip(trip);
+    setDetailsDialogOpen(true);
+  }, []);
+
   const handleRefresh = useCallback(async () => {
     await loadTrips(false);
     toast.success("Trips refreshed");
@@ -155,7 +160,7 @@ const Trips = () => {
   };
 
   // Filter trips based on search and filters
-  const filteredTrips = trips.filter(trip => {
+  const filteredTrips = useMemo(() => trips.filter(trip => {
     const matchesSearch = searchQuery === "" ||
       trip.departure_location.toLowerCase().includes(searchQuery.toLowerCase()) ||
       trip.arrival_location.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -174,7 +179,7 @@ const Trips = () => {
       (dateFilter === "week" && tripDate < weekEnd);
 
     return matchesSearch && matchesSeats && matchesDate;
-  });
+  }), [trips, searchQuery, seatsFilter, dateFilter]);
 
   if (loading) {
     return (
@@ -294,10 +299,7 @@ const Trips = () => {
                   key={trip.id}
                   trip={trip}
                   currentUserId={currentUserId}
-                  onClick={() => {
-                    setSelectedTrip(trip);
-                    setDetailsDialogOpen(true);
-                  }}
+                  onClick={() => handleTripClick(trip)}
                   animationDelay={index * 0.05}
                 />
               ))}

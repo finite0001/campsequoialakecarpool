@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,7 @@ interface TripCardProps {
   animationDelay?: number;
 }
 
-export const TripCard = ({ trip, currentUserId, onClick, animationDelay = 0 }: TripCardProps) => {
+export const TripCard = memo(({ trip, currentUserId, onClick, animationDelay = 0 }: TripCardProps) => {
   const isJoined = trip.participants.some((p) => p.passenger_id === currentUserId);
   const isFull = trip.available_seats === 0;
   const isLowSeats = trip.available_seats > 0 && trip.available_seats <= 2;
@@ -136,4 +137,6 @@ export const TripCard = ({ trip, currentUserId, onClick, animationDelay = 0 }: T
       </CardContent>
     </Card>
   );
-};
+});
+
+TripCard.displayName = "TripCard";
