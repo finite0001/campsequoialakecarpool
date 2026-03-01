@@ -24,7 +24,12 @@ export const TripStatusBadge = ({ departureDateTime, status = "upcoming", classN
     variant = "destructive";
     icon = <XCircle className="w-3 h-3 mr-1" />;
     label = "Cancelled";
-  } else if (isPast && status === "completed") {
+  } else if (status === "in_progress") {
+    displayStatus = "in_progress";
+    variant = "default";
+    icon = <Clock className="w-3 h-3 mr-1" />;
+    label = "In Progress";
+  } else if (isPast) {
     displayStatus = "completed";
     variant = "secondary";
     icon = <CheckCircle className="w-3 h-3 mr-1" />;

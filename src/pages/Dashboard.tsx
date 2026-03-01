@@ -8,6 +8,7 @@ import { LogOut, Car, Users, Plus, Shield, CheckCircle2, AlertCircle, Upload } f
 import { toast } from "sonner";
 import campLogo from "@/assets/camp-logo.png";
 import { MobileNavigation } from "@/components/MobileNavigation";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 interface Profile {
   id: string;
@@ -23,6 +24,7 @@ const Dashboard = () => {
   const [isDriver, setIsDriver] = useState(false);
   const [hasVerifiedDocuments, setHasVerifiedDocuments] = useState(false);
   const [hasAcknowledgedLiability, setHasAcknowledgedLiability] = useState(false);
+  const [liabilityConfirmOpen, setLiabilityConfirmOpen] = useState(false);
   const [stats, setStats] = useState({
     upcomingTrips: 0,
     myTrips: 0,
@@ -179,6 +181,15 @@ const Dashboard = () => {
   }
 
   return (
+    <>
+    <ConfirmDialog
+      open={liabilityConfirmOpen}
+      onOpenChange={setLiabilityConfirmOpen}
+      onConfirm={handleAcknowledgeLiability}
+      title="Acknowledge Liability Release?"
+      description="By confirming, you acknowledge that Camp Sequoia Lake is not responsible for any incidents, accidents, or damages that may occur while using private vehicles for transportation to and from camp activities. This action cannot be undone."
+      confirmText="I Acknowledge & Agree"
+    />
     <div className="min-h-screen bg-background">
       <header className="border-b border-nav/20 bg-nav shadow-md">
         <div className="container mx-auto px-4 py-3 md:py-4 flex items-center justify-between">
@@ -284,9 +295,9 @@ const Dashboard = () => {
                 >
                   View Full Release
                 </Button>
-                <Button 
-                  size="default" 
-                  onClick={handleAcknowledgeLiability}
+                <Button
+                  size="default"
+                  onClick={() => setLiabilityConfirmOpen(true)}
                   className="hover:scale-105 transition-transform"
                 >
                   <CheckCircle2 className="w-4 h-4 mr-2" />
@@ -416,6 +427,7 @@ const Dashboard = () => {
         hasVerifiedDocuments={hasVerifiedDocuments} 
       />
     </div>
+    </>
   );
 };
 
