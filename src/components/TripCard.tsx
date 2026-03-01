@@ -30,6 +30,7 @@ interface TripCardProps {
 export const TripCard = ({ trip, currentUserId, onClick, animationDelay = 0 }: TripCardProps) => {
   const isJoined = trip.participants.some((p) => p.passenger_id === currentUserId);
   const isFull = trip.available_seats === 0;
+  const isLowSeats = trip.available_seats > 0 && trip.available_seats <= 2;
   const confirmedPassengers = trip.total_seats - trip.available_seats;
   const perPersonCost = trip.fuel_cost ? trip.fuel_cost / (confirmedPassengers + 1) : 0;
 
@@ -72,6 +73,11 @@ export const TripCard = ({ trip, currentUserId, onClick, animationDelay = 0 }: T
             >
               {trip.available_seats}/{trip.total_seats}
             </Badge>
+            {isLowSeats && (
+              <Badge variant="outline" className="flex-shrink-0 text-xs border-warning text-warning">
+                Almost full!
+              </Badge>
+            )}
             <ChevronRight className="w-5 h-5 text-muted-foreground md:hidden" />
           </div>
         </div>
@@ -86,8 +92,8 @@ export const TripCard = ({ trip, currentUserId, onClick, animationDelay = 0 }: T
           </span>
         </div>
 
-        {/* Locations - Collapsed on mobile */}
-        <div className="hidden md:block space-y-2">
+        {/* Locations */}
+        <div className="space-y-2">
           <div className="flex items-center gap-2 px-2">
             <MapPin className="w-4 h-4 text-accent flex-shrink-0" />
             <span className="text-muted-foreground text-sm truncate">

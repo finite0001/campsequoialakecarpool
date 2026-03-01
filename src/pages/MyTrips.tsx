@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { getGoogleMapsUrl, getGoogleMapsDirectionsUrl, copyToClipboard } from "@
 import { TripStatusBadge } from "@/components/TripStatusBadge";
 import { MobileNavigation } from "@/components/MobileNavigation";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { PullToRefresh } from "@/components/PullToRefresh";
 
 interface Trip {
   id: string;
@@ -52,12 +53,9 @@ const MyTrips = () => {
   const [hasVerifiedDocuments, setHasVerifiedDocuments] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; tripId: string }>({ open: false, tripId: "" });
 
-  useEffect(() => {
-    loadTrips();
-  }, []);
-
-  const loadTrips = async () => {
+  const loadTrips = useCallback(async (showLoading = true) => {
     try {
+      if (showLoading) setLoading(true);
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -133,7 +131,16 @@ const MyTrips = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
+
+  const handleRefresh = useCallback(async () => {
+    await loadTrips(false);
+    toast.success("Trips refreshed");
+  }, [loadTrips]);
+
+  useEffect(() => {
+    loadTrips();
+  }, [loadTrips]);
 
   const handleLeaveTrip = async (tripId: string, participantId: string) => {
     try {
@@ -214,6 +221,7 @@ const MyTrips = () => {
         </div>
       </header>
 
+      <PullToRefresh onRefresh={handleRefresh} className="min-h-[calc(100vh-4rem)]">
       <main className="container mx-auto px-4 py-4 md:py-8 pb-mobile-nav">
         <div className="mb-4 md:mb-8">
           <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">My Trips</h1>
@@ -463,6 +471,7 @@ const MyTrips = () => {
           </div>
         )}
       </main>
+      </PullToRefresh>
 
       <MobileNavigation
         isDriver={userRole === "driver"}

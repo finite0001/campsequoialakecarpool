@@ -45,6 +45,7 @@ const Trips = () => {
   const [hasVerifiedDocuments, setHasVerifiedDocuments] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [seatsFilter, setSeatsFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
@@ -154,16 +155,24 @@ const Trips = () => {
 
   // Filter trips based on search and filters
   const filteredTrips = trips.filter(trip => {
-    const matchesSearch = searchQuery === "" || 
+    const matchesSearch = searchQuery === "" ||
       trip.departure_location.toLowerCase().includes(searchQuery.toLowerCase()) ||
       trip.arrival_location.toLowerCase().includes(searchQuery.toLowerCase()) ||
       trip.driver.full_name.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesSeats = seatsFilter === "all" ||
       (seatsFilter === "available" && trip.available_seats > 0) ||
       (seatsFilter === "full" && trip.available_seats === 0);
-    
-    return matchesSearch && matchesSeats;
+
+    const tripDate = new Date(trip.departure_datetime);
+    const now = new Date();
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const weekEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
+    const matchesDate = dateFilter === "all" ||
+      (dateFilter === "today" && tripDate < todayEnd) ||
+      (dateFilter === "week" && tripDate < weekEnd);
+
+    return matchesSearch && matchesSeats && matchesDate;
   });
 
   if (loading) {
@@ -234,20 +243,28 @@ const Trips = () => {
           </div>
 
           <div className="mb-6 space-y-4">
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="md:col-span-2">
-                <SearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="Search by location or driver..."
-                />
-              </div>
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search by location or driver..."
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <FilterSelect
+                value={dateFilter}
+                onChange={setDateFilter}
+                options={[
+                  { value: "all", label: "All Dates" },
+                  { value: "today", label: "Today" },
+                  { value: "week", label: "This Week" }
+                ]}
+                placeholder="Filter by date"
+              />
               <FilterSelect
                 value={seatsFilter}
                 onChange={setSeatsFilter}
                 options={[
                   { value: "all", label: "All Trips" },
-                  { value: "available", label: "Available Seats" },
+                  { value: "available", label: "Has Seats" },
                   { value: "full", label: "Full Trips" }
                 ]}
                 placeholder="Filter by seats"

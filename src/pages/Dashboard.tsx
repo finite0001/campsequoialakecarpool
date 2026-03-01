@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import campLogo from "@/assets/camp-logo.png";
 import { MobileNavigation } from "@/components/MobileNavigation";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { PullToRefresh } from "@/components/PullToRefresh";
 
 interface Profile {
   id: string;
@@ -31,12 +32,9 @@ const Dashboard = () => {
     availableRides: 0
   });
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async (showLoading = true) => {
     try {
+      if (showLoading) setLoading(true);
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -93,7 +91,16 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
+
+  const handleRefresh = useCallback(async () => {
+    await loadProfile(false);
+    toast.success("Dashboard refreshed");
+  }, [loadProfile]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
 
   const loadStats = async (userId: string, isDriver: boolean) => {
     try {
@@ -211,6 +218,7 @@ const Dashboard = () => {
         </div>
       </header>
 
+      <PullToRefresh onRefresh={handleRefresh} className="min-h-[calc(100vh-4rem)]">
       <main className="container mx-auto px-4 py-6 md:py-8 pb-mobile-nav">
         <div className="mb-8 animate-fade-in">
           <h2 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
@@ -236,7 +244,7 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid md:grid-cols-3 gap-4 mb-8 animate-fade-in">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8 animate-fade-in">
           <Card className="border-2 hover:border-primary/50 hover:shadow-lg transition-all">
             <CardHeader className="pb-3">
               <CardDescription>Available Rides</CardDescription>
@@ -420,6 +428,7 @@ const Dashboard = () => {
           )}
         </div>
       </main>
+      </PullToRefresh>
 
       <MobileNavigation 
         isDriver={isDriver} 
