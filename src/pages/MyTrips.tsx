@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Trash2, ExternalLink, Share2, Phone, Mail, XCircle, Pencil } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Trash2, ExternalLink, Share2, Phone, Mail, XCircle, Pencil, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import campLogo from "@/assets/camp-logo.png";
@@ -53,6 +53,7 @@ const MyTrips = () => {
   const [hasVerifiedDocuments, setHasVerifiedDocuments] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; tripId: string }>({ open: false, tripId: "" });
   const [cancelConfirm, setCancelConfirm] = useState<{ open: boolean; tripId: string }>({ open: false, tripId: "" });
+  const [checkins, setCheckins] = useState<Record<string, string[]>>({});
 
   const loadTrips = useCallback(async (showLoading = true) => {
     try {
@@ -89,6 +90,8 @@ const MyTrips = () => {
         setHasVerifiedDocuments(!!docs);
       }
 
+      let fetchedTrips: any[] = [];
+
       if (isDriver) {
         // Load trips as driver
         const { data: driverTrips, error } = await supabase
@@ -106,7 +109,7 @@ const MyTrips = () => {
           .order("departure_datetime", { ascending: true });
 
         if (error) throw error;
-        setTrips(driverTrips as any);
+        fetchedTrips = driverTrips as any;
       } else {
         // Load trips as passenger
         const { data: participantData, error } = await supabase
@@ -125,7 +128,27 @@ const MyTrips = () => {
           .eq("passenger_id", session.user.id);
 
         if (error) throw error;
-        setTrips(participantData.map((p: any) => p.trip) as any);
+        fetchedTrips = participantData.map((p: any) => p.trip) as any;
+      }
+
+      setTrips(fetchedTrips);
+
+      // Fetch check-ins for all trips
+      const tripIds = fetchedTrips.map((t: any) => t.id).filter(Boolean);
+      if (tripIds.length > 0) {
+        const { data: checkinsData } = await supabase
+          .from("trip_checkins")
+          .select("trip_id, user_id")
+          .in("trip_id", tripIds);
+
+        const checkinsMap: Record<string, string[]> = {};
+        (checkinsData || []).forEach((c: any) => {
+          if (!checkinsMap[c.trip_id]) checkinsMap[c.trip_id] = [];
+          checkinsMap[c.trip_id].push(c.user_id);
+        });
+        setCheckins(checkinsMap);
+      } else {
+        setCheckins({});
       }
     } catch (error: any) {
       toast.error("Unable to load trips. Please try again.");
@@ -186,6 +209,31 @@ const MyTrips = () => {
       loadTrips();
     } catch (error: any) {
       toast.error("Unable to delete trip. Please try again.");
+    }
+  };
+
+  const handleCheckIn = async (tripId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { error } = await supabase.from("trip_checkins").insert({
+        trip_id: tripId,
+        user_id: session.user.id,
+        status: "checked_in",
+        checked_in_at: new Date().toISOString(),
+      });
+
+      if (error) throw error;
+
+      setCheckins(prev => ({
+        ...prev,
+        [tripId]: [...(prev[tripId] || []), session.user.id],
+      }));
+
+      toast.success("Checked in! See you at the departure point.");
+    } catch (error: any) {
+      toast.error("Unable to check in. Please try again.");
     }
   };
 
@@ -287,6 +335,13 @@ const MyTrips = () => {
               );
               const confirmedPassengers = trip.total_seats - trip.available_seats;
               const perPersonCost = trip.fuel_cost ? trip.fuel_cost / (confirmedPassengers + 1) : 0;
+              const now = new Date();
+              const departure = new Date(trip.departure_datetime);
+              const hoursUntil = (departure.getTime() - now.getTime()) / (1000 * 60 * 60);
+              const isDepartureSoon = hoursUntil <= 24 && hoursUntil >= -4 && trip.status !== "cancelled";
+              const tripCheckins = new Set(checkins[trip.id] || []);
+              const isCheckedIn = tripCheckins.has(currentUserId);
+              const checkedInPassengerCount = trip.participants.filter(p => tripCheckins.has(p.passenger_id)).length;
 
               return (
                 <Card 
@@ -439,6 +494,11 @@ const MyTrips = () => {
                         <h4 className="font-medium mb-3 flex items-center gap-2">
                           <Users className="w-4 h-4 text-primary" />
                           Passengers ({trip.participants.length})
+                          {isDepartureSoon && trip.participants.length > 0 && (
+                            <span className="text-xs text-muted-foreground font-normal ml-auto">
+                              {checkedInPassengerCount}/{trip.participants.length} checked in
+                            </span>
+                          )}
                         </h4>
                         <div className="space-y-2">
                           {trip.participants.map((participant) => (
@@ -446,7 +506,15 @@ const MyTrips = () => {
                               key={participant.id}
                               className="text-sm p-3 rounded-lg bg-muted/50"
                             >
-                              <div className="font-medium mb-1">{participant.passenger.full_name}</div>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-medium">{participant.passenger.full_name}</span>
+                                {tripCheckins.has(participant.passenger_id) && (
+                                  <Badge variant="outline" className="text-success border-success text-xs">
+                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                    Checked in
+                                  </Badge>
+                                )}
+                              </div>
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <Mail className="w-3 h-3" />
                                 <a href={`mailto:${participant.passenger.email}`} className="hover:text-primary">
@@ -467,7 +535,7 @@ const MyTrips = () => {
                       </div>
                     )}
 
-                    <div className="flex gap-2 pt-2">
+                    <div className="flex flex-wrap gap-2 pt-2">
                       {isDriver ? (
                         trip.status === "cancelled" ? (
                           <Button
@@ -480,6 +548,21 @@ const MyTrips = () => {
                           </Button>
                         ) : (
                           <>
+                            {isDepartureSoon && !isCheckedIn && (
+                              <Button
+                                className="flex-1 bg-success hover:bg-success/90 text-success-foreground"
+                                onClick={() => handleCheckIn(trip.id)}
+                              >
+                                <CheckCircle2 className="w-4 h-4 mr-2" />
+                                Check In
+                              </Button>
+                            )}
+                            {isDepartureSoon && isCheckedIn && (
+                              <div className="flex items-center gap-2 flex-1 px-3 py-2 rounded-md bg-success/10 text-success text-sm font-medium">
+                                <CheckCircle2 className="w-4 h-4" />
+                                You're checked in
+                              </div>
+                            )}
                             <Button
                               variant="outline"
                               className="flex-1"
@@ -507,15 +590,30 @@ const MyTrips = () => {
                           </>
                         )
                       ) : myParticipation ? (
-                        <Button
-                          variant="outline"
-                          onClick={() =>
-                            handleLeaveTrip(trip.id, myParticipation.id)
-                          }
-                          className="flex-1"
-                        >
-                          Leave Trip
-                        </Button>
+                        <>
+                          {isDepartureSoon && !isCheckedIn && (
+                            <Button
+                              className="flex-1 bg-success hover:bg-success/90 text-success-foreground"
+                              onClick={() => handleCheckIn(trip.id)}
+                            >
+                              <CheckCircle2 className="w-4 h-4 mr-2" />
+                              Check In
+                            </Button>
+                          )}
+                          {isDepartureSoon && isCheckedIn && (
+                            <div className="flex items-center gap-2 flex-1 px-3 py-2 rounded-md bg-success/10 text-success text-sm font-medium">
+                              <CheckCircle2 className="w-4 h-4" />
+                              You're checked in
+                            </div>
+                          )}
+                          <Button
+                            variant="outline"
+                            onClick={() => handleLeaveTrip(trip.id, myParticipation.id)}
+                            className="flex-1"
+                          >
+                            Leave Trip
+                          </Button>
+                        </>
                       ) : null}
                     </div>
                   </CardContent>
