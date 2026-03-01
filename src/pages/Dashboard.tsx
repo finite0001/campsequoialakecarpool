@@ -10,6 +10,7 @@ import campLogo from "@/assets/camp-logo.png";
 import { MobileNavigation } from "@/components/MobileNavigation";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PullToRefresh } from "@/components/PullToRefresh";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface Profile {
   id: string;
@@ -226,6 +227,7 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle className="text-nav-foreground hover:bg-nav-foreground/10" />
             <Button variant="ghost" size="sm" onClick={() => navigate("/profile")} className="text-nav-foreground hover:bg-nav-foreground/10">
               <UserCircle className="w-4 h-4 md:mr-2" />
               <span className="hidden md:inline">Profile</span>
